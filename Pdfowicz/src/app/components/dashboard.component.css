@@ -1,25 +1,25 @@
 .page-container {
-    position: relative;
-    width: 595px;
-    height: 842px;
-    border: 1px solid black;
+  position: relative;
+  width: 595px;
+  height: 842px;
+  border: 1px solid black;
 }
 
 canvas {
-    background: #efefef;
-    position: absolute;
-    top: 0;
-    left: 0;
-    color: #000;
+  background: #efefef;
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: #000;
 }
 
 .page-textarea {
-    position: absolute;
-    width: 555px;
-    height: 802px;
-    padding: 20px;
-    overflow: hidden;
-    text-align: left;
-    font-size: 20px;
-    white-space: pre-wrap;
+  position: absolute;
+  width: 555px;
+  height: 802px;
+  padding: 20px;
+  overflow: hidden;
+  text-align: left;
+  font-size: 20px;
+  white-space: pre-wrap;
 }

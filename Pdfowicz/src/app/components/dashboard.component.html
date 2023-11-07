@@ -1,0 +1,10 @@
+<div>
+    <h1>PDF Editor</h1>
+    <div class="page-container">
+      <canvas #canvas width="595" height="842"></canvas>
+      <div class="page-textarea" contenteditable="true"></div>
+    </div>
+    <a *ngIf="pdfDataUri" [href]="pdfDataUri" download="generated.pdf">
+      <button (click)="updateCanvas($event)">Download PDF</button>
+    </a>
+  </div>

@@ -27,7 +27,7 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": ["./node_modules/html2pdf.js/dist/html2pdf.bundle.min.js"]
           },
           "configurations": {
             "production": {

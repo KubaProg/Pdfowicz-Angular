@@ -1,25 +1,24 @@
-.page-container {
-  position: relative;
-  width: 595px;
-  height: 842px;
-  border: 1px solid black;
+/* editor.component.css */
+.editor {
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 20px;
+  margin-bottom: 20px;
+  width: 80vw; /* Ustawienie szerokości na 80% szerokości widoku */
+  max-width: 800px; /* Ustawienie maksymalnej szerokości dla lepszej responsywności */
+  margin: auto;
 }
 
-canvas {
-  background: #efefef;
-  position: absolute;
-  top: 0;
-  left: 0;
-  color: #000;
+.page-container {
+  position: relative;
 }
 
 .page-textarea {
-  position: absolute;
-  width: 555px;
-  height: 802px;
-  padding: 20px;
-  overflow: hidden;
-  text-align: left;
-  font-size: 20px;
-  white-space: pre-wrap;
+  min-height: 400px;
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 10px;
+  overflow-y: auto;
+  width: 100%; /* Ustawienie szerokości na 100%, aby dostosować się do szerokości rodzica */
+  box-sizing: border-box; /* Zachowanie paddingu i bordera wewnątrz szerokości */
 }

@@ -13,6 +13,10 @@
   position: relative;
 }
 
+svg{
+  height: 100%;
+}
+
 .page-textarea {
   min-height: 400px;
   background-color: white;

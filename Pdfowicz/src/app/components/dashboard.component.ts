@@ -4,6 +4,10 @@ import {Component, ViewChild, ElementRef, OnInit, OnDestroy, AfterViewInit} from
 import html2pdf from 'html2pdf.js';
 import { Path, Surface} from "@progress/kendo-drawing";
 import {drawScene} from "../draw-scene";
+import pdfMake from 'pdfmake/build/pdfmake';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
+
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 @Component({
   selector: 'app-dashboard',
@@ -20,20 +24,71 @@ export class DashboardComponent implements  OnDestroy, AfterViewInit{
   ngAfterViewInit(): void {
     this.surface = this.createSurface();
     drawScene(this.surface);
+    this.insertParagraph()
+
   }
 
   ngOnDestroy(): void {
     this.surface.destroy();
-    drawScene(this.surface)
+    drawScene(this.surface);
   }
 
   generatePDF(): void {
     const content: HTMLElement | null = this.pageTextarea.nativeElement;
 
     if (content) {
-      html2pdf(content);
+      const elements = this.getElementsForPDF(content);
+
+      const docDefinition = {
+        content: elements
+      };
+
+      pdfMake.createPdf(docDefinition).download('generated.pdf');
     }
   }
+
+  private getElementsForPDF(content: HTMLElement): any[] {
+    const elementsArray = [];
+    let currentParagraph: string[] = [];
+
+    content.childNodes.forEach((node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        // Obsługa tekstu
+        currentParagraph.push(node.nodeValue);
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        if (node.nodeName.toLowerCase() === 'img') {
+          // Obsługa obrazu
+          if (currentParagraph.length > 0) {
+            elementsArray.push({ text: currentParagraph.join(' '), margin: [0, 0, 0, 10] });
+            currentParagraph = []; // Resetuj bieżący paragraf
+          }
+
+          const imgData = (node as HTMLImageElement).src;
+          elementsArray.push({ image: imgData, width: 500, margin: [0, 10, 0, 10] });
+        } else if (node.nodeName.toLowerCase() === 'p') {
+          // Obsługa paragrafu
+          const textContent = node.textContent?.trim();
+          if (textContent) {
+            if (currentParagraph.length > 0) {
+              elementsArray.push({ text: currentParagraph.join(' '), margin: [0, 0, 0, 10] });
+              currentParagraph = []; // Resetuj bieżący paragraf
+            }
+
+            elementsArray.push({ text: textContent, margin: [0, 0, 0, 10] });
+          }
+        }
+      }
+    });
+
+    // Dodaj ewentualny ostatni paragraf
+    if (currentParagraph.length > 0) {
+      elementsArray.push({ text: currentParagraph.join(' '), margin: [0, 0, 0, 10] });
+    }
+
+    return elementsArray;
+  }
+
+
 
   handleImageDrop(event: DragEvent): void {
     event.preventDefault();
@@ -45,6 +100,7 @@ export class DashboardComponent implements  OnDestroy, AfterViewInit{
         const imageElement = document.createElement('img');
         imageElement.src = e.target!.result as string;
         this.pageTextarea.nativeElement.appendChild(imageElement);
+        this.insertParagraph(); // Wstaw nowy paragraf po dodaniu obrazu
       };
       reader.readAsDataURL(files[0]);
     }
@@ -120,7 +176,7 @@ export class DashboardComponent implements  OnDestroy, AfterViewInit{
 
     if (content) {
       const paragraphElement = document.createElement('p');
-      paragraphElement.textContent = 'New paragraph...';
+      paragraphElement.innerHTML = '<br>'; // Używamy <br>, aby można było pisać w polu tekstowym
       content.appendChild(paragraphElement);
     }
   }

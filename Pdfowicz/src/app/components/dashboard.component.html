@@ -1,9 +1,6 @@
 <div class="editor">
   <h1>PDF Editor</h1>
   <div class="toolbar">
-    <button mat-icon-button class="insert-button" (click)="insertParagraph()">
-      <mat-icon>format_align_left</mat-icon>
-    </button>
     <button mat-icon-button class="draw-button" (click)="toggleDrawing()">
       <mat-icon>{{ isDrawing ? 'gesture' : 'gesture_off' }}</mat-icon>
     </button>
@@ -16,4 +13,3 @@
   </div>
   <button (click)="generatePDF()">Download as PDF</button>
 </div>
-

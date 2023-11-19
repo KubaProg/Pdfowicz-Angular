@@ -118,6 +118,14 @@ export class DashboardComponent implements  OnDestroy, AfterViewInit{
     };
   }
 
+  insertParagraph(): void {
+    const content: HTMLElement | null = this.pageTextarea.nativeElement;
 
+    if (content) {
+      const paragraphElement = document.createElement('p');
+      paragraphElement.textContent = 'New paragraph...';
+      content.appendChild(paragraphElement);
+    }
+  }
 
 }

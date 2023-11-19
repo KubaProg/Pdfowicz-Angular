@@ -74,6 +74,7 @@ export class DashboardComponent implements  OnDestroy, AfterViewInit{
   stopDrawing(): void {
     this.drawingPath = undefined;
   }
+
   private createSurface(): Surface {
     const nativeElement: HTMLDivElement = this.pageTextarea.nativeElement;
     const surface = Surface.create(nativeElement);
@@ -84,12 +85,21 @@ export class DashboardComponent implements  OnDestroy, AfterViewInit{
 
     const svgElement = nativeElement.querySelector('svg');
     if (svgElement) {
-      svgElement.style.height = '100vh';
+      svgElement.style.height = '100%';
+      svgElement.style.width = '100%';
+      svgElement.style.position = 'absolute';
+      svgElement.style.left = '0';
+      svgElement.style.top = '0';
     }
+
+
+    // Prevent the Kendo UI Surface from intercepting keydown events
+    nativeElement.addEventListener('keydown', (event) => {
+      event.stopPropagation();
+    });
 
     return surface;
   }
-
 
   private getOffset(event: MouseEvent): { x: number; y: number } {
     // Check if the surface has a property that holds the HTML element

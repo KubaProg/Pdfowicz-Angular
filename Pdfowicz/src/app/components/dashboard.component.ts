@@ -15,6 +15,7 @@ export class DashboardComponent implements  OnDestroy, AfterViewInit{
   @ViewChild('pageTextarea') pageTextarea!: ElementRef<HTMLDivElement>;
   private surface!: Surface;
   private drawingPath: Path | undefined;
+  isDrawing: boolean = false;
 
   ngAfterViewInit(): void {
     this.surface = this.createSurface();
@@ -54,13 +55,15 @@ export class DashboardComponent implements  OnDestroy, AfterViewInit{
   }
 
   startDrawing(event: MouseEvent): void {
-    this.drawingPath = new Path({
-      stroke: { color: 'blue', width: 2 },
-    });
+    if(this.isDrawing){
+      this.drawingPath = new Path({
+        stroke: { color: 'blue', width: 2 },
+      });
 
-    const offset = this.getOffset(event);
-    this.drawingPath.moveTo(offset.x, offset.y);
-    this.surface.draw(this.drawingPath);
+      const offset = this.getOffset(event);
+      this.drawingPath.moveTo(offset.x, offset.y);
+      this.surface.draw(this.drawingPath);
+    }
   }
 
   handleMouseMove(event: MouseEvent): void {
@@ -92,12 +95,6 @@ export class DashboardComponent implements  OnDestroy, AfterViewInit{
       svgElement.style.top = '0';
     }
 
-
-    // Prevent the Kendo UI Surface from intercepting keydown events
-    nativeElement.addEventListener('keydown', (event) => {
-      event.stopPropagation();
-    });
-
     return surface;
   }
 
@@ -125,6 +122,18 @@ export class DashboardComponent implements  OnDestroy, AfterViewInit{
       const paragraphElement = document.createElement('p');
       paragraphElement.textContent = 'New paragraph...';
       content.appendChild(paragraphElement);
+    }
+  }
+
+  toggleDrawing(): void {
+    this.isDrawing = !this.isDrawing;
+
+    if (this.isDrawing) {
+      // Enable drawing logic
+      // For example, add event listeners or other drawing setup
+    } else {
+      // Disable drawing logic
+      // For example, remove event listeners or reset drawing state
     }
   }
 

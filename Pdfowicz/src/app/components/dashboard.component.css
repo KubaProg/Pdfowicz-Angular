@@ -23,6 +23,21 @@ svg{
   border: 1px solid #ccc;
   padding: 10px;
   overflow-y: auto;
-  width: 100%; /* Ustawienie szerokości na 100%, aby dostosować się do szerokości rodzica */
-  box-sizing: border-box; /* Zachowanie paddingu i bordera wewnątrz szerokości */
+  width: 100%;
+  box-sizing: border-box;
+  position: relative; /* Added this line to make it a positioned container */
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.insert-button {
+  margin-left: 10px;
+}
+
+.draw-button {
+  margin-left: 10px;
 }

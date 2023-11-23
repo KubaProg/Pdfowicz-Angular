@@ -1,4 +1,5 @@
 import { Component, ViewChild, AfterViewInit, ElementRef } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Surface } from "@progress/kendo-drawing";
 import { drawScene } from "../draw-scene";
 import { PDFExportComponent } from "@progress/kendo-angular-pdf-export";
@@ -18,6 +19,8 @@ export class DashboardComponent implements AfterViewInit {
   private resizingImage: HTMLImageElement | null = null;
   private startX: number = 0;
   private startY: number = 0;
+  pages: SafeHtml[] = [1];
+  private pageID : number = 1;
 
   ngAfterViewInit(): void {
     drawScene(this.surface);
@@ -104,5 +107,15 @@ export class DashboardComponent implements AfterViewInit {
     this.resizingImage = null;
     document.removeEventListener('mousemove', (e) => this.handleMouseMove(e));
     document.removeEventListener('mouseup', () => this.handleMouseUp());
+  }
+
+  checkOverflow(event: Event) {
+    const e = event.target as HTMLElement;
+    if(e.offsetHeight < e.scrollHeight || e.offsetWidth < e.scrollWidth == true) {
+      const originalText = e.innerText;
+      console.log(originalText);
+      this.pageID += 1;
+      this.pages.push(this.pageID);
+    }
   }
 }

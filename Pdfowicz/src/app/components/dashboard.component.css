@@ -18,15 +18,18 @@ svg{
 }
 
 .page-textarea {
-  text-align: left;
-  width: 595px;
-  min-height: 842px;
   background-color: white;
-  border: 1px solid #ccc;
-  padding: 10px;
-  overflow-y: auto;
+  position: relative;
   box-sizing: border-box;
-  position: relative; /* Added this line to make it a positioned container */
+  width: 595px;
+  height: 842px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  margin: auto;
+  margin-bottom: 20px;
+  overflow: none;
+  text-align: left;
+  line-break: anywhere;
 }
 
 .toolbar {

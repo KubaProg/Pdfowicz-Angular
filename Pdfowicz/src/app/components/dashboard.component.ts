@@ -1,4 +1,4 @@
-import { Component, ViewChild, AfterViewInit, ElementRef } from '@angular/core';
+import { Component, ViewChild, AfterViewInit, ElementRef, AfterViewChecked } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Surface } from "@progress/kendo-drawing";
 import { drawScene } from "../draw-scene";
@@ -9,7 +9,7 @@ import { PDFExportComponent } from "@progress/kendo-angular-pdf-export";
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
-export class DashboardComponent implements AfterViewInit {
+export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
   @ViewChild('pdf', { static: false }) pdf: PDFExportComponent;
   @ViewChild('pageTextarea', { static: false }) pageTextarea: ElementRef;
@@ -19,11 +19,19 @@ export class DashboardComponent implements AfterViewInit {
   private resizingImage: HTMLImageElement | null = null;
   private startX: number = 0;
   private startY: number = 0;
-  pages: SafeHtml[] = [1];
+  private isPageAdded = false;
+  pages: number[] = [1];
   private pageID : number = 1;
 
   ngAfterViewInit(): void {
     drawScene(this.surface);
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.isPageAdded) {
+      this.isPageAdded = false;
+      (document.querySelectorAll(".page-textarea")[this.pages.indexOf(Math.max(...this.pages))] as HTMLElement).focus()
+    }
   }
 
   exportAsPDF() {
@@ -109,13 +117,14 @@ export class DashboardComponent implements AfterViewInit {
     document.removeEventListener('mouseup', () => this.handleMouseUp());
   }
 
+  //Code for multiple pages generation
   checkOverflow(event: Event) {
     const e = event.target as HTMLElement;
     if(e.offsetHeight < e.scrollHeight || e.offsetWidth < e.scrollWidth == true) {
       const originalText = e.innerText;
-      console.log(originalText);
       this.pageID += 1;
-      this.pages.push(this.pageID);
+      this.pages.splice(Array.from(document.querySelectorAll(".page-textarea")).indexOf(e) + 1, 0, this.pageID);
+      this.isPageAdded = true;
     }
   }
 }

@@ -28,6 +28,7 @@ svg{
   margin: auto;
   margin-bottom: 20px;
   overflow: none;
+  text-overflow: ellipsis;
   text-align: left;
   line-break: anywhere;
 }

@@ -1,13 +1,13 @@
 <div class="editor">
   <h1>PDF Editor</h1>
   <div class="toolbar">
-
+    <input type="file" id="fileInput" style="display: none" (change)="handleFileInput($event)">
+    <button (click)="addImage()">Add Image</button>
   </div>
   <div class="page-container">
     <kendo-pdf-export #pdf paperSize="A4">
-      <div class="page-textarea" contenteditable="true" #pageTextarea>
+      <div class="page-textarea" contenteditable="true" #pageTextarea (mouseup)="saveSelection()">
         <p>Your text goes here...</p>
-
       </div>
     </kendo-pdf-export>
   </div>

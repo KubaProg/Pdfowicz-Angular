@@ -1,12 +1,25 @@
 <div class="editor">
   <h1>PDF Editor</h1>
+
   <div class="toolbar">
+    <button mat-icon-button (click)="insertShape('square')">
+      <mat-icon>crop_square</mat-icon>
+    </button>
+    <button mat-icon-button (click)="insertShape('circle')">
+      <mat-icon>panorama_fish_eye</mat-icon>
+    </button>
+    <button mat-icon-button (click)="insertShape('rectangle')">
+      <mat-icon>crop_16_9</mat-icon>
+    </button>
     <input type="file" id="fileInput" style="display: none" (change)="handleFileInput($event)">
-    <button (click)="addImage()">Add Image</button>
+    <button mat-icon-button (click)="addImage()">
+      <mat-icon>add_a_photo</mat-icon>
+    </button>
   </div>
-  <div class="page-container">
+
+  <div class="page-container" (click)="setCursorPosition($event)">
     <kendo-pdf-export #pdf paperSize="A4">
-      <div *ngFor="let page of pages" class="page-textarea" contenteditable="true" (input)="checkOverflow($event)" (mouseup)="saveSelection()">
+      <div *ngFor="let page of pages" class="page-textarea" contenteditable="true" (input)="checkOverflow($event)" (mouseup)="saveSelection()" #editor>
       </div>
     </kendo-pdf-export>
   </div>

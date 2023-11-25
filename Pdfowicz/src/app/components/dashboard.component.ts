@@ -13,6 +13,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
   @ViewChild('pdf', { static: false }) pdf: PDFExportComponent;
   @ViewChild('pageTextarea', { static: false }) pageTextarea: ElementRef;
+  @ViewChild('editor', { static: false }) editor: ElementRef;
 
   private surface!: Surface;
   private currentRange: Range | null = null;
@@ -22,10 +23,12 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   private isPageAdded = false;
   pages: number[] = [1];
   private pageID : number = 1;
+  private selectedElement: HTMLElement | null = null;
 
   ngAfterViewInit(): void {
     drawScene(this.surface);
   }
+
 
   ngAfterViewChecked(): void {
     if (this.isPageAdded) {
@@ -98,7 +101,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     document.addEventListener('mouseup', () => this.handleMouseUp());
   }
 
-  handleMouseMove(event: MouseEvent) {
+  handleMouseMove(event: MouseEvent): void {
     if (this.resizingImage) {
       const deltaX = event.clientX - this.startX;
       const deltaY = event.clientY - this.startY;
@@ -110,6 +113,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       this.startY = event.clientY;
     }
   }
+
 
   handleMouseUp() {
     this.resizingImage = null;
@@ -127,4 +131,142 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       this.isPageAdded = true;
     }
   }
+
+  insertShape(shape: string): void {
+    const selection = window.getSelection();
+    const range = selection?.getRangeAt(0);
+
+    if (range) {
+      const shapeElement = this.createShapeElement(shape);
+
+      // Insert a non-breaking space along with the shape
+      const spaceNode = document.createTextNode('\u00A0');
+      range.deleteContents();
+      range.insertNode(spaceNode);
+      range.insertNode(shapeElement);
+
+      // Set focus on the editor
+      this.editor.nativeElement.focus();
+
+      // Set selection range to the end of the non-breaking space
+      selection?.collapse(spaceNode, 1);
+    }
+  }
+
+  createShapeElement(shape: string): HTMLImageElement {
+    const imgElement = new Image();
+    imgElement.classList.add('inserted-shape');
+    imgElement.style.width = '50px';
+    imgElement.style.height = '50px';
+    imgElement.style.position = 'absolute';
+    imgElement.style.cursor = 'grab'; // Set cursor to indicate draggable element
+
+    if (shape === 'square') {
+      imgElement.src = 'assets/square.png'; // Replace with your square image path
+    } else if (shape === 'rectangle') {
+      imgElement.src = 'assets/rectangle.png'; // Replace with your rectangle image path
+    } else if (shape === 'circle') {
+      imgElement.src = 'assets/circle.png';
+    } else {
+      imgElement.src = 'path_to_default_image'; // Replace with your default image path
+    }
+
+    // Add click event listener to handle shape click
+    imgElement.addEventListener('click', (event) => this.handleShapeClick(event));
+
+    // Add mousedown event listener to enable dragging
+    imgElement.addEventListener('mousedown', (event) => this.handleShapeMouseDown(event));
+
+    return imgElement;
+  }
+
+
+  handleShapeMouseDown(event: MouseEvent): void {
+    this.selectedElement = event.target as HTMLImageElement;
+    const boundingRect = this.selectedElement.getBoundingClientRect();
+
+    // Calculate the offset from the mouse click to the top-left corner of the image
+    this.startX = event.clientX - boundingRect.left;
+    this.startY = event.clientY - boundingRect.top;
+
+    // Add mousemove and mouseup event listeners for dragging
+    document.addEventListener('mousemove', (e) => this.handleShapeMouseMove(e));
+    document.addEventListener('mouseup', () => this.handleShapeMouseUp());
+  }
+
+
+  addTextToSvg(parent: SVGElement, text: string): void {
+    // Create a paragraph
+    const paragraph = document.createElement('p');
+    paragraph.innerHTML = text;
+
+    // Append paragraph to parent
+    parent.appendChild(paragraph);
+  }
+
+  handleShapeMouseUp(): void {
+    this.selectedElement = null;
+
+    // Remove mousemove and mouseup event listeners after dragging
+    document.removeEventListener('mousemove', (e) => this.handleShapeMouseMove(e));
+    document.removeEventListener('mouseup', () => this.handleShapeMouseUp());
+  }
+
+
+
+
+
+  handleShapeMouseMove(event: MouseEvent): void {
+    if (this.selectedElement) {
+      const deltaX = event.clientX - this.startX;
+      const deltaY = event.clientY - this.startY;
+
+      this.selectedElement.style.left = this.selectedElement.offsetLeft + deltaX + 'px';
+      this.selectedElement.style.top = this.selectedElement.offsetTop + deltaY + 'px';
+
+      this.startX = event.clientX;
+      this.startY = event.clientY;
+    }
+  }
+
+  handleShapeClick(event: MouseEvent): void {
+    const clickedShape = event.target as HTMLElement;
+
+    if (this.selectedElement === clickedShape) {
+      // If the clicked shape is already selected, deselect it
+      this.selectedElement = null;
+    } else {
+      // Select the clicked shape
+      this.selectedElement = clickedShape;
+
+      // Move the cursor to the beginning of the container div
+      const containerDiv = clickedShape.closest('.inserted-shape') as HTMLElement;
+      const range = document.createRange();
+      const selection = window.getSelection();
+
+      if (containerDiv) {
+        range.setStart(containerDiv.firstChild || containerDiv, 0);
+        range.collapse(true);
+
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
+    }
+  }
+
+  setCursorPosition(event: MouseEvent): void {
+    const editor = this.editor.nativeElement;
+    const range = document.caretRangeFromPoint(event.clientX, event.clientY);
+
+    if (range) {
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+
+    editor.focus();
+  }
+
 }

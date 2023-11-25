@@ -26,6 +26,7 @@
     "@progress/kendo-angular-pdfviewer": "^14.1.0",
     "@progress/kendo-drawing": "^1.19.0",
     "@progress/kendo-file-saver": "^1.1.1",
+    "@syncfusion/ej2-angular-diagrams": "^23.2.4",
     "@types/kendo-ui": "^2023.2.4",
     "html-pdf": "^3.0.1",
     "jquery": "^3.7.1",

@@ -27,7 +27,6 @@ svg{
   border: 1px solid #ccc;
   margin: auto;
   margin-bottom: 20px;
-  overflow: none;
   text-overflow: ellipsis;
   text-align: left;
   line-break: anywhere;
@@ -46,4 +45,25 @@ svg{
 .draw-button {
   margin-left: 10px;
 }
+
+.page-container {
+  position: relative;
+  cursor: text;
+}
+
+.inserted-shape {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+}
+
+.inserted-shape {
+  cursor: move;
+  user-select: none; /* Prevent text selection during drag */
+  position: absolute;
+}
+
+
 

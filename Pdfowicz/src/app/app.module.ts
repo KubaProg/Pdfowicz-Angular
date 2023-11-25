@@ -9,6 +9,7 @@ import { ButtonsModule } from "@progress/kendo-angular-buttons";
 import { IntlModule } from "@progress/kendo-angular-intl";
 import { PDFExportModule } from "@progress/kendo-angular-pdf-export";
 import {DashboardComponent} from "./components/dashboard.component";
+import {DiagramModule} from "@syncfusion/ej2-angular-diagrams";
 
 @NgModule({
   declarations: [
@@ -24,7 +25,8 @@ import {DashboardComponent} from "./components/dashboard.component";
     MatButtonModule,
     IntlModule,
     PDFExportModule,
-    ButtonsModule
+    ButtonsModule,
+    DiagramModule
   ],
   providers: [],
   bootstrap: [AppComponent]

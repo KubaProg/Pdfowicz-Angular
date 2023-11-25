@@ -14,6 +14,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   @ViewChild('pdf', { static: false }) pdf: PDFExportComponent;
   @ViewChild('pageTextarea', { static: false }) pageTextarea: ElementRef;
   @ViewChild('editor', { static: false }) editor: ElementRef;
+  @ViewChild('pageContainer', { static: false }) pageContainer: ElementRef;
 
   private surface!: Surface;
   private currentRange: Range | null = null;
@@ -24,6 +25,8 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   pages: number[] = [1];
   private pageID : number = 1;
   private selectedElement: HTMLElement | null = null;
+  private rubberToolActive = false;
+  private rubberToolClicked = false;
 
   ngAfterViewInit(): void {
     drawScene(this.surface);
@@ -132,26 +135,43 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     }
   }
 
+
   insertShape(shape: string): void {
-    const selection = window.getSelection();
-    const range = selection?.getRangeAt(0);
+    if (shape === 'rubber') {
+      // Toggle the active state of the rubber tool
+      this.rubberToolActive = !this.rubberToolActive;
+    } else {
+      const selection = window.getSelection();
+      const range = selection?.getRangeAt(0);
 
-    if (range) {
-      const shapeElement = this.createShapeElement(shape);
+      if (range) {
+        const shapeElement = this.createShapeElement(shape);
 
-      // Insert a non-breaking space along with the shape
-      const spaceNode = document.createTextNode('\u00A0');
-      range.deleteContents();
-      range.insertNode(spaceNode);
-      range.insertNode(shapeElement);
+        // Insert a non-breaking space along with the shape
+        const spaceNode = document.createTextNode('\u00A0');
+        range.deleteContents();
+        range.insertNode(spaceNode);
+        range.insertNode(shapeElement);
 
-      // Set focus on the editor
-      this.editor.nativeElement.focus();
+        // Set focus on the editor
+        this.editor.nativeElement.focus();
 
-      // Set selection range to the end of the non-breaking space
-      selection?.collapse(spaceNode, 1);
+        // Set selection range to the end of the non-breaking space
+        selection?.collapse(spaceNode, 1);
+      }
+    }
+
+    // Change the color of the rubber tool button based on the active state
+    this.rubberToolActive ? this.rubberButtonColor = 'green' : this.rubberButtonColor = 'black';
+  }
+
+  deleteSelectedShape(): void {
+    if (this.rubberToolActive && this.selectedElement) {
+      this.selectedElement.remove();
+      this.selectedElement = null;
     }
   }
+
 
   createShapeElement(shape: string): HTMLImageElement {
     const imgElement = new Image();
@@ -183,77 +203,68 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
   handleShapeMouseDown(event: MouseEvent): void {
     this.selectedElement = event.target as HTMLImageElement;
-    const boundingRect = this.selectedElement.getBoundingClientRect();
-
-    // Calculate the offset from the mouse click to the top-left corner of the image
-    this.startX = event.clientX - boundingRect.left;
-    this.startY = event.clientY - boundingRect.top;
+    this.startX = event.clientX - this.selectedElement.offsetLeft;
+    this.startY = event.clientY - this.selectedElement.offsetTop;
 
     // Add mousemove and mouseup event listeners for dragging
-    document.addEventListener('mousemove', (e) => this.handleShapeMouseMove(e));
-    document.addEventListener('mouseup', () => this.handleShapeMouseUp());
+    document.addEventListener('mousemove', this.handleShapeMouseMove);
+    document.addEventListener('mouseup', this.handleShapeMouseUp);
   }
 
 
-  addTextToSvg(parent: SVGElement, text: string): void {
-    // Create a paragraph
-    const paragraph = document.createElement('p');
-    paragraph.innerHTML = text;
-
-    // Append paragraph to parent
-    parent.appendChild(paragraph);
-  }
-
-  handleShapeMouseUp(): void {
+  handleShapeMouseUp = (): void => {
     this.selectedElement = null;
 
     // Remove mousemove and mouseup event listeners after dragging
-    document.removeEventListener('mousemove', (e) => this.handleShapeMouseMove(e));
-    document.removeEventListener('mouseup', () => this.handleShapeMouseUp());
+    document.removeEventListener('mousemove', this.handleShapeMouseMove);
+    document.removeEventListener('mouseup', this.handleShapeMouseUp);
   }
 
 
-
-
-
-  handleShapeMouseMove(event: MouseEvent): void {
+  handleShapeMouseMove = (event: MouseEvent): void => {
     if (this.selectedElement) {
-      const deltaX = event.clientX - this.startX;
-      const deltaY = event.clientY - this.startY;
+      const mouseX = event.clientX - this.startX;
+      const mouseY = event.clientY - this.startY;
 
-      this.selectedElement.style.left = this.selectedElement.offsetLeft + deltaX + 'px';
-      this.selectedElement.style.top = this.selectedElement.offsetTop + deltaY + 'px';
-
-      this.startX = event.clientX;
-      this.startY = event.clientY;
+      this.selectedElement.style.left = mouseX + 'px';
+      this.selectedElement.style.top = mouseY + 'px';
     }
   }
+  rubberButtonColor: any;
+
 
   handleShapeClick(event: MouseEvent): void {
     const clickedShape = event.target as HTMLElement;
 
-    if (this.selectedElement === clickedShape) {
-      // If the clicked shape is already selected, deselect it
-      this.selectedElement = null;
-    } else {
-      // Select the clicked shape
+    if (this.rubberToolActive) {
+      // Delete the clicked shape if the rubber tool is active
       this.selectedElement = clickedShape;
+      this.deleteSelectedShape();
+    } else {
+      if (this.selectedElement === clickedShape) {
+        // If the clicked shape is already selected, deselect it
+        this.selectedElement = null;
+      } else {
+        // Select the clicked shape
+        this.selectedElement = clickedShape;
 
-      // Move the cursor to the beginning of the container div
-      const containerDiv = clickedShape.closest('.inserted-shape') as HTMLElement;
-      const range = document.createRange();
-      const selection = window.getSelection();
+        // Move the cursor to the beginning of the container div
+        const containerDiv = clickedShape.closest('.inserted-shape') as HTMLElement;
+        const range = document.createRange();
+        const selection = window.getSelection();
 
-      if (containerDiv) {
-        range.setStart(containerDiv.firstChild || containerDiv, 0);
-        range.collapse(true);
+        if (containerDiv) {
+          range.setStart(containerDiv.firstChild || containerDiv, 0);
+          range.collapse(true);
 
-        if (selection) {
-          selection.removeAllRanges();
-          selection.addRange(range);
+          if (selection) {
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
         }
       }
     }
+
   }
 
   setCursorPosition(event: MouseEvent): void {

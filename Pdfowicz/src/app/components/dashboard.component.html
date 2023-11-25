@@ -15,9 +15,12 @@
     <button mat-icon-button (click)="addImage()">
       <mat-icon>add_a_photo</mat-icon>
     </button>
+    <button mat-icon-button (click)="insertShape('rubber')" [style.color]="rubberButtonColor">
+      <mat-icon>highlight_off</mat-icon>
+    </button>
   </div>
 
-  <div class="page-container" (click)="setCursorPosition($event)">
+  <div class="page-container" (click)="setCursorPosition($event)" #pageContainer>
     <kendo-pdf-export #pdf paperSize="A4">
       <div *ngFor="let page of pages" class="page-textarea" contenteditable="true" (input)="checkOverflow($event)" (mouseup)="saveSelection()" #editor>
       </div>

@@ -22,7 +22,7 @@
 
   <div class="page-container" (click)="setCursorPosition($event)" #pageContainer>
     <kendo-pdf-export #pdf paperSize="A4">
-      <div *ngFor="let page of pages" class="page-textarea" contenteditable="true" (input)="checkOverflow($event)" (mouseup)="saveSelection()" #editor>
+      <div *ngFor="let page of pages" class="page-textarea" contenteditable="true" (paste)="checkOverflow($event)" (input)="checkOverflow($event)" (mouseup)="saveSelection()" #editor>
       </div>
     </kendo-pdf-export>
   </div>

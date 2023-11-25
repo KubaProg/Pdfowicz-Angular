@@ -21,10 +21,12 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   private resizingImage: HTMLImageElement | null = null;
   private startX: number = 0;
   private startY: number = 0;
-  private isPageAdded = false;
   pages: number[] = [1];
   private pageID : number = 1;
   private selectedElement: HTMLElement | null = null;
+  private overflowText : string = "";
+  private focusPageIndex = 0;
+  private focusPageChanged = false;
   private rubberToolActive = false;
   private rubberToolClicked = false;
 
@@ -34,9 +36,13 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
 
   ngAfterViewChecked(): void {
-    if (this.isPageAdded) {
-      this.isPageAdded = false;
-      (document.querySelectorAll(".page-textarea")[this.pages.indexOf(Math.max(...this.pages))] as HTMLElement).focus()
+    if (this.focusPageChanged) {
+      this.focusPageChanged = false;
+      const newPage = (document.querySelectorAll(".page-textarea")[this.focusPageIndex] as HTMLElement);
+      newPage.innerHTML = this.overflowText + newPage.innerHTML;
+      newPage.focus();
+      this.moveCursorToEnd(newPage);
+      this.overflowText = ""
     }
   }
 
@@ -126,15 +132,52 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
   //Code for multiple pages generation
   checkOverflow(event: Event) {
+    event.preventDefault();
     const e = event.target as HTMLElement;
-    if(e.offsetHeight < e.scrollHeight || e.offsetWidth < e.scrollWidth == true) {
-      const originalText = e.innerText;
-      this.pageID += 1;
-      this.pages.splice(Array.from(document.querySelectorAll(".page-textarea")).indexOf(e) + 1, 0, this.pageID);
-      this.isPageAdded = true;
+    if (e.innerHTML != "<br>" || this.pages.length == 1) {
+      let pastedText = "";
+      if (event.type == 'paste') {
+        const clipboardData = (event as ClipboardEvent).clipboardData || (window as any).clipboardData;
+        pastedText = clipboardData.getData('text/plain');
+        const selection = window.getSelection();
+        if (selection) {
+          selection.getRangeAt(0).insertNode(document.createTextNode(pastedText));
+        }
+      }
+
+      while(e.offsetHeight < e.scrollHeight || e.offsetWidth < e.scrollWidth == true) {
+        this.overflowText = e.innerText.substring(e.innerText.length - 1) + this.overflowText;
+        const fullPageText = e.innerText.slice(0, -1);
+        e.innerText = fullPageText;
+      }
+
+      if(this.overflowText != "") {
+        this.focusPageIndex = Array.from(document.querySelectorAll(".page-textarea")).indexOf(e) + 1;
+        this.focusPageChanged = true;
+        if (!this.pages[this.focusPageIndex]) {
+          this.pageID += 1;
+          this.pages.splice(this.focusPageIndex, 0, this.pageID);
+        }
+      }
+    }
+    else {
+      this.pages.splice(Array.from(document.querySelectorAll(".page-textarea")).indexOf(e), 1);
+      this.focusPageIndex = Array.from(document.querySelectorAll(".page-textarea")).indexOf(e) - 1;
+      this.focusPageChanged = true;
     }
   }
 
+  moveCursorToEnd(element: HTMLElement): void {
+    const range = document.createRange();
+    const selection = window.getSelection();
+  
+    if (selection) {
+      range.selectNodeContents(element);
+      range.collapse(false); // Collapse the range to the end
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  }
 
   insertShape(shape: string): void {
     if (shape === 'rubber') {

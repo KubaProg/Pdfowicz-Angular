@@ -1,4 +1,4 @@
-import { Component, ViewChild, AfterViewInit, ElementRef, AfterViewChecked } from '@angular/core';
+import {Component, ViewChild, AfterViewInit, ElementRef, AfterViewChecked, ChangeDetectorRef} from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Surface } from "@progress/kendo-drawing";
 import { drawScene } from "../draw-scene";
@@ -30,6 +30,8 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   private rubberToolActive = false;
   private rubberToolClicked = false;
 
+  constructor(private cdr: ChangeDetectorRef) {}
+
   ngAfterViewInit(): void {
     drawScene(this.surface);
   }
@@ -50,85 +52,6 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     this.pdf.saveAs('document.pdf');
   }
 
-  addImage() {
-    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
-    fileInput.click();
-  }
-
-  handleFileInput(event: Event) {
-    const inputElement = event.target as HTMLInputElement;
-    const file = inputElement.files?.[0];
-
-    if (file) {
-      if (this.currentRange) {
-        this.insertImageFromFile(file);
-      } else {
-        this.appendImageToFile(file);
-      }
-    }
-
-    // Clear the file input to allow selecting the same file again
-    inputElement.value = '';
-  }
-
-  insertImageFromFile(file: File) {
-    const imageUrl = URL.createObjectURL(file);
-    const img = new Image();
-    img.src = imageUrl;
-    img.setAttribute('draggable', 'true');
-    img.addEventListener('mousedown', (e) => this.handleMouseDown(e));
-
-    if (this.currentRange) {
-      const fragment = this.currentRange.createContextualFragment(img.outerHTML);
-      this.currentRange.deleteContents();
-      this.currentRange.insertNode(fragment);
-    }
-  }
-
-  appendImageToFile(file: File) {
-    const imageUrl = URL.createObjectURL(file);
-    const img = new Image();
-    img.src = imageUrl;
-    img.setAttribute('draggable', 'true');
-    img.addEventListener('mousedown', (e) => this.handleMouseDown(e));
-
-    const pageTextarea = this.pageTextarea.nativeElement;
-    pageTextarea.appendChild(img);
-  }
-
-  saveSelection() {
-    const selection = window.getSelection();
-    this.currentRange = selection.getRangeAt(0);
-    // You can store the range or selection for later use if needed
-  }
-
-  handleMouseDown(event: MouseEvent) {
-    this.resizingImage = event.target as HTMLImageElement;
-    this.startX = event.clientX;
-    this.startY = event.clientY;
-    document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-    document.addEventListener('mouseup', () => this.handleMouseUp());
-  }
-
-  handleMouseMove(event: MouseEvent): void {
-    if (this.resizingImage) {
-      const deltaX = event.clientX - this.startX;
-      const deltaY = event.clientY - this.startY;
-
-      this.resizingImage.width += deltaX;
-      this.resizingImage.height += deltaY;
-
-      this.startX = event.clientX;
-      this.startY = event.clientY;
-    }
-  }
-
-
-  handleMouseUp() {
-    this.resizingImage = null;
-    document.removeEventListener('mousemove', (e) => this.handleMouseMove(e));
-    document.removeEventListener('mouseup', () => this.handleMouseUp());
-  }
 
   //Code for multiple pages generation
   checkOverflow(event: Event) {
@@ -170,7 +93,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   moveCursorToEnd(element: HTMLElement): void {
     const range = document.createRange();
     const selection = window.getSelection();
-  
+
     if (selection) {
       range.selectNodeContents(element);
       range.collapse(false); // Collapse the range to the end
@@ -321,6 +244,98 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     }
 
     editor.focus();
+  }
+
+
+  addImage(): void {
+    const imageInput = document.getElementById('imageInput') as HTMLInputElement;
+
+    // Resetujemy wartość elementu wejściowego, aby umożliwić dodanie tego samego pliku ponownie
+    imageInput.value = '';
+
+    // Trigger the click event on the hidden file input
+    imageInput.click();
+  }
+
+  handleImageInput(event: any): void {
+    const fileInput = event.target;
+    const file = fileInput.files[0];
+
+    if (file) {
+      this.readFileAsDataURL(file)
+        .then((result: string) => {
+          const imgElement = this.createImageElement(result);
+
+          // Pobieramy aktualny zakres zaznaczenia
+          const selection = window.getSelection();
+          const range = selection?.getRangeAt(0);
+
+          if (range && !range.collapsed) {
+            // Jeśli coś jest zaznaczone, wstawiamy obraz w miejscu aktualnego zakresu
+            range.deleteContents();
+            range.insertNode(imgElement);
+          } else {
+            // Jeśli nic nie jest zaznaczone, dodajemy obraz na koniec edytora
+            this.editor.nativeElement.appendChild(imgElement);
+          }
+
+          this.editor.nativeElement.focus();
+          this.cdr.detectChanges(); // Wykrywamy zmiany, aby zaktualizować widok
+        })
+        .catch((error) => {
+          console.error('Błąd odczytu pliku:', error);
+        })
+        .finally(() => {
+          // Resetujemy wartość elementu wejściowego, aby umożliwić dodanie tego samego pliku ponownie
+          fileInput.value = '';
+        });
+    }
+  }
+
+  private readFileAsDataURL(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = (e: any) => {
+        resolve(e.target.result);
+      };
+
+      reader.onerror = (error) => {
+        reject(error);
+      };
+
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Function to create an image element
+  createImageElement(src: string): HTMLImageElement {
+    const imgElement = new Image();
+    imgElement.src = src;
+    imgElement.classList.add('inserted-image');
+    imgElement.style.width = 'auto';
+    imgElement.style.height = '100px'; // Set the initial height as per your requirement
+    imgElement.style.cursor = 'grab';
+
+    // Add click event listener to handle image click
+    imgElement.addEventListener('click', (event) => this.handleShapeClick(event));
+
+    // Add mousedown event listener to enable dragging
+    imgElement.addEventListener('mousedown', (event) => this.handleShapeMouseDown(event));
+
+    return imgElement;
+  }
+  // Function to insert an element at the current cursor position
+  insertElementAtCursor(element: HTMLElement): void {
+    const selection = window.getSelection();
+    const range = selection?.getRangeAt(0);
+
+    if (range) {
+      range.deleteContents();
+      range.insertNode(element);
+      this.editor.nativeElement.focus();
+      this.cdr.detectChanges(); // Detect changes to update the view
+    }
   }
 
 }

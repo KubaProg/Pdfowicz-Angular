@@ -29,6 +29,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   private focusPageChanged = false;
   private rubberToolActive = false;
   private rubberToolClicked = false;
+  public draggingFile = false;
 
   constructor(private cdr: ChangeDetectorRef) {}
 
@@ -375,6 +376,61 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       this.startX = event.clientX;
       this.startY = event.clientY;
     }
+  }
+
+  // Dodajemy obsługę zdarzenia 'dragover' do umożliwienia przeciągania plików nad edytorem
+  handleDragOver(event: DragEvent): void {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'copy';
+    }
+  }
+
+  // Dodajemy obsługę zdarzenia 'drop' do obsługi przeciągania i upuszczania plików
+  handleDrop(event: DragEvent): void {
+    event.preventDefault();
+
+    this.draggingFile = false;
+
+    const files = event.dataTransfer?.files;
+
+    if (files && files.length > 0) {
+      const file = files[0];
+
+      this.readFileAsDataURL(file)
+        .then((result: string) => {
+          const imgElement = this.createImageElement(result);
+
+          // Dodajemy obraz do aktualnego zakresu zaznaczenia, jeśli istnieje
+          const selection = window.getSelection();
+          const range = selection?.getRangeAt(0);
+
+          if (range && !range.collapsed) {
+            range.deleteContents();
+            range.insertNode(imgElement);
+          } else {
+            // Dodajemy obraz na koniec edytora, jeśli nic nie jest zaznaczone
+            this.editor.nativeElement.appendChild(imgElement);
+          }
+
+          this.editor.nativeElement.focus();
+          this.cdr.detectChanges();
+        })
+        .catch((error) => {
+          console.error('Błąd odczytu pliku:', error);
+        });
+    }
+  }
+
+  // Dodajemy obsługę zdarzenia 'dragenter' i 'dragleave' do śledzenia, czy użytkownik przeciąga plik
+  handleDragEnter(event: DragEvent): void {
+    event.preventDefault();
+    this.draggingFile = true;
+  }
+
+  handleDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    this.draggingFile = false;
   }
 
 }

@@ -314,13 +314,14 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     imgElement.src = src;
     imgElement.classList.add('inserted-image');
     imgElement.style.width = 'auto';
-    imgElement.style.height = '100px'; // Set the initial height as per your requirement
+    imgElement.style.height = '100px'; // Ustaw rozmiar początkowy według własnych preferencji
     imgElement.style.cursor = 'grab';
 
-    // Add click event listener to handle image click
-    imgElement.addEventListener('click', (event) => this.handleShapeClick(event));
+    // Dodajemy obsługę zdarzenia 'mousedown' do obsługi zmiany rozmiaru
+    imgElement.addEventListener('mousedown', (event) => this.handleImageMouseDown(event));
 
-    // Add mousedown event listener to enable dragging
+    // Dodajemy obsługę 'click' i 'mousedown' do obsługi zaznaczania obrazu i przeciągania
+    imgElement.addEventListener('click', (event) => this.handleShapeClick(event));
     imgElement.addEventListener('mousedown', (event) => this.handleShapeMouseDown(event));
 
     return imgElement;
@@ -335,6 +336,44 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       range.insertNode(element);
       this.editor.nativeElement.focus();
       this.cdr.detectChanges(); // Detect changes to update the view
+    }
+  }
+
+
+  // section of resizing photos
+
+  handleImageMouseDown(event: MouseEvent): void {
+    this.resizingImage = event.target as HTMLImageElement;
+    this.startX = event.clientX;
+    this.startY = event.clientY;
+
+    // Dodajemy nasłuchiwanie na ruch myszy i puszczenie przycisku
+    document.addEventListener('mousemove', this.handleImageMouseMove);
+    document.addEventListener('mouseup', this.handleImageMouseUp);
+  }
+
+  handleImageMouseUp = (): void => {
+    this.resizingImage = null;
+
+    // Usuwamy nasłuchiwanie na ruch myszy i puszczenie przycisku
+    document.removeEventListener('mousemove', this.handleImageMouseMove);
+    document.removeEventListener('mouseup', this.handleImageMouseUp);
+  }
+
+  handleImageMouseMove = (event: MouseEvent): void => {
+    if (this.resizingImage) {
+      const deltaX = event.clientX - this.startX;
+      const deltaY = event.clientY - this.startY;
+
+      const newWidth = this.resizingImage.width + deltaX;
+      const newHeight = this.resizingImage.height + deltaY;
+
+      // Ustawiamy nowe wymiary obrazu
+      this.resizingImage.style.width = `${newWidth}px`;
+      this.resizingImage.style.height = `${newHeight}px`;
+
+      this.startX = event.clientX;
+      this.startY = event.clientY;
     }
   }
 

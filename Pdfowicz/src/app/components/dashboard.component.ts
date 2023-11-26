@@ -30,6 +30,10 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   private rubberToolActive = false;
   private rubberToolClicked = false;
   public draggingFile = false;
+  private readonly minImageWidth = 50;
+  private readonly maxImageWidth = 575;
+  private readonly minImageHeight = 50;
+  private readonly maxImageHeight = 400;
 
   constructor(private cdr: ChangeDetectorRef) {}
 
@@ -366,8 +370,8 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       const deltaX = event.clientX - this.startX;
       const deltaY = event.clientY - this.startY;
 
-      const newWidth = this.resizingImage.width + deltaX;
-      const newHeight = this.resizingImage.height + deltaY;
+      const newWidth = Math.max(this.minImageWidth, Math.min(this.maxImageWidth, this.resizingImage.width + deltaX));
+      const newHeight = Math.max(this.minImageHeight, Math.min(this.maxImageHeight, this.resizingImage.height + deltaY));
 
       // Ustawiamy nowe wymiary obrazu
       this.resizingImage.style.width = `${newWidth}px`;

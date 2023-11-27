@@ -17,7 +17,6 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   @ViewChild('pageContainer', { static: false }) pageContainer: ElementRef;
 
   private surface!: Surface;
-  private currentRange: Range | null = null;
   private resizingImage: HTMLImageElement | null = null;
   private startX: number = 0;
   private startY: number = 0;
@@ -28,12 +27,17 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   private focusPageIndex = 0;
   private focusPageChanged = false;
   private rubberToolActive = false;
-  private rubberToolClicked = false;
   public draggingFile = false;
   private readonly minImageWidth = 50;
   private readonly maxImageWidth = 575;
   private readonly minImageHeight = 50;
   private readonly maxImageHeight = 400;
+
+  private isDragging = false;
+  private dragOffsetX = 0;
+  private dragOffsetY = 0;
+  rubberButtonColor: any;
+
 
   constructor(private cdr: ChangeDetectorRef) {}
 
@@ -173,15 +177,21 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
 
   handleShapeMouseDown(event: MouseEvent): void {
-    this.selectedElement = event.target as HTMLImageElement;
-    this.startX = event.clientX - this.selectedElement.offsetLeft;
-    this.startY = event.clientY - this.selectedElement.offsetTop;
+    this.selectedElement = event.target as HTMLElement;
+
+    // Check if the clicked element is an image (not a div or other non-image element)
+    if (!this.selectedElement.classList.contains('inserted-shape')) {
+      return;
+    }
+
+    // Save the initial cursor position
+    this.dragOffsetX = event.clientX;
+    this.dragOffsetY = event.clientY;
 
     // Add mousemove and mouseup event listeners for dragging
     document.addEventListener('mousemove', this.handleShapeMouseMove);
     document.addEventListener('mouseup', this.handleShapeMouseUp);
   }
-
 
   handleShapeMouseUp = (): void => {
     this.selectedElement = null;
@@ -189,19 +199,29 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     // Remove mousemove and mouseup event listeners after dragging
     document.removeEventListener('mousemove', this.handleShapeMouseMove);
     document.removeEventListener('mouseup', this.handleShapeMouseUp);
-  }
 
+    // Reset drag variables
+    this.isDragging = false;
+    this.dragOffsetX = 0;
+    this.dragOffsetY = 0;
+  }
 
   handleShapeMouseMove = (event: MouseEvent): void => {
     if (this.selectedElement) {
-      const mouseX = event.clientX - this.startX;
-      const mouseY = event.clientY - this.startY;
+      if (!this.isDragging) {
+        this.isDragging = true;
+        const boundingRect = this.selectedElement.getBoundingClientRect();
+        this.dragOffsetX = event.clientX - boundingRect.left;
+        this.dragOffsetY = event.clientY - boundingRect.top;
+      }
 
-      this.selectedElement.style.left = mouseX + 'px';
-      this.selectedElement.style.top = mouseY + 'px';
+      const mouseX = event.clientX - this.dragOffsetX;
+      const mouseY = event.clientY - this.dragOffsetY;
+
+      this.selectedElement.style.left = mouseX-120 + 'px';
+      this.selectedElement.style.top = mouseY-120 + 'px';
     }
   }
-  rubberButtonColor: any;
 
 
   handleShapeClick(event: MouseEvent): void {

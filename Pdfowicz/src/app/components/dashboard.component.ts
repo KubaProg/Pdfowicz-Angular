@@ -99,18 +99,15 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     if (this.selectedElement) {
       const touch = event.touches[0];
 
-      if (!this.isDragging) {
-        this.isDragging = true;
-        const boundingRect = this.selectedElement.getBoundingClientRect();
-        this.dragOffsetX = touch.clientX - boundingRect.left;
-        this.dragOffsetY = touch.clientY - boundingRect.top;
-      }
+      const containerRect = this.pageContainer.nativeElement.getBoundingClientRect();
+      const containerWidth = containerRect.width;
+      const containerHeight = containerRect.height;
 
-      const mouseX = touch.clientX - this.dragOffsetX;
-      const mouseY = touch.clientY - this.dragOffsetY;
+      const mouseXPercentage = ((touch.clientX - containerRect.left) / containerWidth) * 70;
+      const mouseYPercentage = ((touch.clientY - containerRect.top) / containerHeight) * 100;
 
-      this.selectedElement.style.left = mouseX - 120 + 'px';
-      this.selectedElement.style.top = mouseY - 120 + 'px';
+      this.selectedElement.style.left = `${mouseXPercentage}%`;
+      this.selectedElement.style.top = `${mouseYPercentage}%`;
     }
   }
 
@@ -240,8 +237,8 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   createShapeElement(shape: string): HTMLImageElement {
     const imgElement = new Image();
     imgElement.classList.add('inserted-shape');
-    imgElement.style.width = '50px';
-    imgElement.style.height = '50px';
+    imgElement.style.width = '80px';
+    imgElement.style.height = '80px';
     imgElement.style.position = 'absolute';
     imgElement.style.cursor = 'grab'; // Set cursor to indicate draggable element
 
@@ -300,26 +297,21 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     document.removeEventListener('mouseup', this.handleShapeMouseUp);
 
     // Reset drag variables
-    this.isDragging = false;
-    this.dragOffsetX = 0;
-    this.dragOffsetY = 0;
+    // this.isDragging = false;
+    // this.dragOffsetX = 0;
+    // this.dragOffsetY = 0;
   }
 
   handleShapeMouseMove = (event: MouseEvent): void => {
-    if (this.selectedElement) {
-      if (!this.isDragging) {
-        this.isDragging = true;
-        const boundingRect = this.selectedElement.getBoundingClientRect();
-        this.dragOffsetX = event.clientX - boundingRect.left;
-        this.dragOffsetY = event.clientY - boundingRect.top;
-      }
+      const containerRect = this.pageContainer.nativeElement.getBoundingClientRect();
+      const containerWidth = containerRect.width;
+      const containerHeight = containerRect.height;
 
-      const mouseX = event.clientX - this.dragOffsetX;
-      const mouseY = event.clientY - this.dragOffsetY;
+      const mouseXPercentage = ((event.clientX - containerRect.left) / containerWidth) * 130;
+      const mouseYPercentage = ((event.clientY - containerRect.top) / containerHeight) * 100;
 
-      this.selectedElement.style.left = mouseX-120 + 'px';
-      this.selectedElement.style.top = mouseY-120 + 'px';
-    }
+      this.selectedElement.style.left = `${mouseXPercentage}%`;
+      this.selectedElement.style.top = `${mouseYPercentage}%`;
   }
 
 

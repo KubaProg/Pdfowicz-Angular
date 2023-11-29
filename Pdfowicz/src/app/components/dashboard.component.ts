@@ -1,5 +1,4 @@
 import {Component, ViewChild, AfterViewInit, ElementRef, AfterViewChecked, ChangeDetectorRef} from '@angular/core';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Surface } from "@progress/kendo-drawing";
 import { drawScene } from "../draw-scene";
 import { PDFExportComponent } from "@progress/kendo-angular-pdf-export";
@@ -32,11 +31,14 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   private readonly maxImageWidth = 575;
   private readonly minImageHeight = 50;
   private readonly maxImageHeight = 400;
+  private touchStartX: number = 0;
+  private touchStartY: number = 0;
 
   private isDragging = false;
   private dragOffsetX = 0;
   private dragOffsetY = 0;
   rubberButtonColor: any;
+
 
 
   constructor(private cdr: ChangeDetectorRef) {}
@@ -60,6 +62,93 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   exportAsPDF() {
     this.pdf.saveAs('document.pdf');
   }
+
+  handleShapeTouchStart(event: TouchEvent): void {
+    this.selectedElement = event.target as HTMLElement;
+
+    // Check if the touched element is an image (not a div or other non-image element)
+    if (!this.selectedElement.classList.contains('inserted-shape')) {
+      return;
+    }
+
+    const touch = event.touches[0];
+
+    // Save the initial touch position
+    this.touchStartX = touch.clientX;
+    this.touchStartY = touch.clientY;
+
+    // Add touchmove and touchend event listeners for dragging
+    document.addEventListener('touchmove', this.handleShapeTouchMove);
+    document.addEventListener('touchend', this.handleShapeTouchEnd);
+  }
+
+  handleShapeTouchEnd = (): void => {
+    this.selectedElement = null;
+
+    // Remove touchmove and touchend event listeners after dragging
+    document.removeEventListener('touchmove', this.handleShapeTouchMove);
+    document.removeEventListener('touchend', this.handleShapeTouchEnd);
+
+    // Reset drag variables
+    this.isDragging = false;
+    this.dragOffsetX = 0;
+    this.dragOffsetY = 0;
+  }
+
+  handleShapeTouchMove = (event: TouchEvent): void => {
+    if (this.selectedElement) {
+      const touch = event.touches[0];
+
+      if (!this.isDragging) {
+        this.isDragging = true;
+        const boundingRect = this.selectedElement.getBoundingClientRect();
+        this.dragOffsetX = touch.clientX - boundingRect.left;
+        this.dragOffsetY = touch.clientY - boundingRect.top;
+      }
+
+      const mouseX = touch.clientX - this.dragOffsetX;
+      const mouseY = touch.clientY - this.dragOffsetY;
+
+      this.selectedElement.style.left = mouseX - 120 + 'px';
+      this.selectedElement.style.top = mouseY - 120 + 'px';
+    }
+  }
+
+  handleImageTouchStart(event: TouchEvent): void {
+    this.resizingImage = event.target as HTMLImageElement;
+    this.touchStartX = event.touches[0].clientX;
+    this.touchStartY = event.touches[0].clientY;
+
+    // Add touchmove and touchend event listeners for resizing
+    // document.addEventListener('touchmove', this.handleImageTouchMove);
+    document.addEventListener('touchend', this.handleImageTouchEnd);
+  }
+
+  handleImageTouchEnd = (): void => {
+    this.resizingImage = null;
+
+    // Remove touchmove and touchend event listeners after resizing
+    // document.removeEventListener('touchmove', this.handleImageTouchMove);
+    document.removeEventListener('touchend', this.handleImageTouchEnd);
+  }
+
+  handleImageTouchMove = (event: TouchEvent): void => {
+    if (this.resizingImage) {
+      const deltaX = event.touches[0].clientX - this.touchStartX;
+      const deltaY = event.touches[0].clientY - this.touchStartY;
+
+      const newWidth = Math.max(this.minImageWidth, Math.min(this.maxImageWidth, this.resizingImage.width + deltaX));
+      const newHeight = Math.max(this.minImageHeight, Math.min(this.maxImageHeight, this.resizingImage.height + deltaY));
+
+      // Set the new dimensions of the image
+      this.resizingImage.style.width = `${newWidth}px`;
+      this.resizingImage.style.height = `${newHeight}px`;
+
+      this.touchStartX = event.touches[0].clientX;
+      this.touchStartY = event.touches[0].clientY;
+    }
+  }
+
 
 
   //Code for multiple pages generation
@@ -171,6 +260,16 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
     // Add mousedown event listener to enable dragging
     imgElement.addEventListener('mousedown', (event) => this.handleShapeMouseDown(event));
+
+
+    imgElement.addEventListener('touchstart', (event) => this.handleImageTouchStart(event));
+    // imgElement.addEventListener('touchmove', (event) => this.handleImageTouchMove(event));
+    imgElement.addEventListener('touchend', () => this.handleImageTouchEnd());
+
+    imgElement.addEventListener('touchstart', (event) => this.handleShapeTouchStart(event));
+    imgElement.addEventListener('touchmove', (event) => this.handleShapeTouchMove(event));
+    imgElement.addEventListener('touchend', () => this.handleShapeTouchEnd());
+
 
     return imgElement;
   }
@@ -349,6 +448,10 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     imgElement.addEventListener('click', (event) => this.handleShapeClick(event));
     imgElement.addEventListener('mousedown', (event) => this.handleShapeMouseDown(event));
 
+    imgElement.addEventListener('touchstart', (event) => this.handleImageTouchStart(event));
+    imgElement.addEventListener('touchmove', (event) => this.handleImageTouchMove(event));
+    imgElement.addEventListener('touchend', () => this.handleImageTouchEnd());
+
     return imgElement;
   }
   // Function to insert an element at the current cursor position
@@ -403,10 +506,20 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   }
 
   // Dodajemy obsługę zdarzenia 'dragover' do umożliwienia przeciągania plików nad edytorem
-  handleDragOver(event: DragEvent): void {
+  handleDragOver(event: Event | DragEvent | TouchEvent): void {
     event.preventDefault();
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = 'copy';
+
+    if (event instanceof TouchEvent) {
+      // Handle touch events on mobile devices
+      const touchEvent = event as TouchEvent;
+      if (touchEvent.touches.length > 0) {
+        this.draggingFile = true;
+      }
+    } else if (event instanceof DragEvent) {
+      // Handle drag events on desktop
+      if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = 'copy';
+      }
     }
   }
 

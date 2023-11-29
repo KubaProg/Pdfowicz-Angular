@@ -83,5 +83,8 @@ svg{
   border-radius: 50%;
 }
 
+.draggable {
+  cursor: grab;
+}
 
 

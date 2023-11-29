@@ -154,27 +154,29 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
       const distanceToCenter = Math.sqrt((event.clientX - centerX) ** 2 + (event.clientY - centerY) ** 2);
 
-      if (distanceToCenter < 25) {
-        // If the cursor is close to the center, initiate dragging
+      // Dostosuj odległość, aby umożliwić łatwe złapanie za kształt
+      const grabThreshold = 20;
+
+      if (distanceToCenter < grabThreshold) {
+        // Przesuwanie
         this.draggingElement = shapeElement;
         this.dragStartX = event.clientX - shapeElement.offsetLeft;
         this.dragStartY = event.clientY - shapeElement.offsetTop;
 
-        // Add mousemove and mouseup event listeners for dragging
         document.addEventListener('mousemove', this.handleShapeDragMouseMove);
         document.addEventListener('mouseup', this.handleShapeDragMouseUp);
       } else {
-        // If the cursor is close to the edges, initiate resizing
+        // Zmiana rozmiaru
         this.resizingShape = shapeElement;
         this.resizeStartX = event.clientX;
         this.resizeStartY = event.clientY;
 
-        // Add mousemove and mouseup event listeners for resizing
         document.addEventListener('mousemove', this.handleShapeResizeMouseMove);
         document.addEventListener('mouseup', this.handleShapeResizeMouseUp);
       }
     }
   }
+
   handleShapeDragMouseUp = (): void => {
     this.draggingElement = null;
 
@@ -209,18 +211,26 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       const deltaX = event.clientX - this.resizeStartX;
       const deltaY = event.clientY - this.resizeStartY;
 
-      const newWidth = Math.max(this.minImageWidth, Math.min(this.maxImageWidth, this.resizingShape.offsetWidth + deltaX));
-      const newHeight = Math.max(this.minImageHeight, Math.min(this.maxImageHeight, this.resizingShape.offsetHeight + deltaY));
+      // Ustal środek okręgu i aktualne promienie
+      const centerX = this.resizingShape.offsetLeft + this.resizingShape.offsetWidth / 2;
+      const centerY = this.resizingShape.offsetTop + this.resizingShape.offsetHeight / 2;
+      const currentRadiusX = this.resizingShape.offsetWidth / 2;
+      const currentRadiusY = this.resizingShape.offsetHeight / 2;
 
-      // Set new dimensions for the shape
-      this.resizingShape.style.width = `${newWidth}px`;
-      this.resizingShape.style.height = `${newHeight}px`;
+      // Przeskaluj promienie proporcjonalnie
+      const newRadiusX = Math.max(this.minImageWidth / 2, Math.min(this.maxImageWidth / 2, currentRadiusX + deltaX / 2));
+      const newRadiusY = Math.max(this.minImageHeight / 2, Math.min(this.maxImageHeight / 2, currentRadiusY + deltaY / 2));
+
+      // Ustaw nowe promienie i pozycję dla okręgu
+      this.resizingShape.style.width = `${newRadiusX * 2}px`;
+      this.resizingShape.style.height = `${newRadiusY * 2}px`;
+      this.resizingShape.style.left = `${centerX - newRadiusX}px`;
+      this.resizingShape.style.top = `${centerY - newRadiusY}px`;
 
       this.resizeStartX = event.clientX;
       this.resizeStartY = event.clientY;
     }
   }
-
   deleteSelectedShape(): void {
     if (this.rubberToolActive && this.selectedElement) {
       this.selectedElement.remove();

@@ -66,4 +66,22 @@ svg{
 }
 
 
+.inserted-shape {
+  border: 1px solid #000;
+}
+
+.inserted-shape.square {
+  background-color: red;
+}
+
+.inserted-shape.rectangle {
+  background-color: blue;
+}
+
+.inserted-shape.circle {
+  background-color: green;
+  border-radius: 50%;
+}
+
+
 

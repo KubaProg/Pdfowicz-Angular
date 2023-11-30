@@ -71,8 +71,8 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     event.preventDefault();
     let e = event.target as HTMLElement;
   
-    if (e instanceof HTMLImageElement) {
-      e = e.parentElement;
+    if (!(e.classList.contains("page-textarea"))) {
+      e = e.closest(".page-textarea")
     }
   
     if (e.innerHTML !== '' || this.pages.length === 1) {
@@ -90,11 +90,22 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       }
   
       let lastChild = e.lastChild;
-      console.log(lastChild);
       while (e.offsetHeight < e.scrollHeight) {
-        this.overflowElements = (lastChild as Element).outerHTML + this.overflowElements;
-        lastChild.remove();
-        lastChild = e.lastChild;
+        if ((lastChild as Element).tagName == "DIV"){
+          let lastCharacter = (lastChild as Element).innerHTML.slice(-1);
+          this.overflowElements = lastCharacter + this.overflowElements;
+          (lastChild as Element).innerHTML = (lastChild as Element).innerHTML.slice(0, -1);
+
+          if ((lastChild as Element).innerHTML == "") {
+            lastChild.remove();
+            lastChild = e.lastChild;
+          }
+        }
+        else {
+          this.overflowElements = (lastChild as Element).outerHTML + this.overflowElements;
+          lastChild.remove();
+          lastChild = e.lastChild;
+        }
       }
   
       if (this.overflowElements !== '') {

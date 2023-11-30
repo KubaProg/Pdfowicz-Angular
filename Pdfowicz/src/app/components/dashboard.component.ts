@@ -1,5 +1,4 @@
 import {Component, ViewChild, AfterViewInit, ElementRef, AfterViewChecked, ChangeDetectorRef} from '@angular/core';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Surface } from "@progress/kendo-drawing";
 import { drawScene } from "../draw-scene";
 import { PDFExportComponent } from "@progress/kendo-angular-pdf-export";
@@ -17,7 +16,6 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   @ViewChild('pageContainer', { static: false }) pageContainer: ElementRef;
 
   private surface!: Surface;
-  private currentRange: Range | null = null;
   private resizingImage: HTMLImageElement | null = null;
   private startX: number = 0;
   private startY: number = 0;
@@ -28,12 +26,13 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   private focusPageIndex = 0;
   private focusPageChanged = false;
   private rubberToolActive = false;
-  private rubberToolClicked = false;
   public draggingFile = false;
   private readonly minImageWidth = 50;
   private readonly maxImageWidth = 575;
   private readonly minImageHeight = 50;
   private readonly maxImageHeight = 400;
+  rubberButtonColor: any;
+
 
   private resizingShape: HTMLElement | null = null;
   private resizeStartX: number = 0;
@@ -145,34 +144,56 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     this.rubberToolActive ? this.rubberButtonColor = 'green' : this.rubberButtonColor = 'black';
   }
 
-  handleShapeMouseDown(event: MouseEvent, shapeElement: HTMLElement): void {
+  handleShapeMouseDown(event: MouseEvent | TouchEvent, shapeElement: HTMLElement): void {
+    // Extract touch details if it's a touch event
+    const isTouchEvent = event instanceof TouchEvent;
+    const touch = isTouchEvent ? (event as TouchEvent).touches[0] : null;
+
+    // Get coordinates based on whether it's a mouse or touch event
+    const clientX = isTouchEvent ? touch?.clientX || 0 : (event as MouseEvent).clientX;
+    const clientY = isTouchEvent ? touch?.clientY || 0 : (event as MouseEvent).clientY;
+
     const isResizableShape = shapeElement.classList.contains('inserted-shape');
     if (isResizableShape) {
       const rect = shapeElement.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
 
-      const distanceToCenter = Math.sqrt((event.clientX - centerX) ** 2 + (event.clientY - centerY) ** 2);
+      const distanceToCenter = Math.sqrt((clientX - centerX) ** 2 + (clientY - centerY) ** 2);
 
-      // Dostosuj odległość, aby umożliwić łatwe złapanie za kształt
+      // Adjust the distance for easy shape grabbing
       const grabThreshold = 20;
 
       if (distanceToCenter < grabThreshold) {
-        // Przesuwanie
+        // Dragging
         this.draggingElement = shapeElement;
-        this.dragStartX = event.clientX - shapeElement.offsetLeft;
-        this.dragStartY = event.clientY - shapeElement.offsetTop;
+        this.dragStartX = clientX - shapeElement.offsetLeft;
+        this.dragStartY = clientY - shapeElement.offsetTop;
 
-        document.addEventListener('mousemove', this.handleShapeDragMouseMove);
-        document.addEventListener('mouseup', this.handleShapeDragMouseUp);
+        // Add touchmove and touchend event listeners for touch events
+        if (isTouchEvent) {
+          document.addEventListener('touchmove', this.handleShapeDragMouseMove);
+          document.addEventListener('touchend', this.handleShapeDragMouseUp);
+        } else {
+          // Add mousemove and mouseup event listeners for mouse events
+          document.addEventListener('mousemove', this.handleShapeDragMouseMove);
+          document.addEventListener('mouseup', this.handleShapeDragMouseUp);
+        }
       } else {
-        // Zmiana rozmiaru
+        // Resizing
         this.resizingShape = shapeElement;
-        this.resizeStartX = event.clientX;
-        this.resizeStartY = event.clientY;
+        this.resizeStartX = clientX;
+        this.resizeStartY = clientY;
 
-        document.addEventListener('mousemove', this.handleShapeResizeMouseMove);
-        document.addEventListener('mouseup', this.handleShapeResizeMouseUp);
+        // Add touchmove and touchend event listeners for touch events
+        if (isTouchEvent) {
+          document.addEventListener('touchmove', this.handleShapeResizeMouseMove);
+          document.addEventListener('touchend', this.handleShapeResizeMouseUp);
+        } else {
+          // Add mousemove and mouseup event listeners for mouse events
+          document.addEventListener('mousemove', this.handleShapeResizeMouseMove);
+          document.addEventListener('mouseup', this.handleShapeResizeMouseUp);
+        }
       }
     }
   }
@@ -180,36 +201,55 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   handleShapeDragMouseUp = (): void => {
     this.draggingElement = null;
 
-    // Remove mousemove and mouseup event listeners after dragging
+    // Remove mousemove and mouseup event listeners after dragging for mouse events
     document.removeEventListener('mousemove', this.handleShapeDragMouseMove);
     document.removeEventListener('mouseup', this.handleShapeDragMouseUp);
+
+    // Remove touchmove and touchend event listeners after dragging for touch events
+    document.removeEventListener('touchmove', this.handleShapeDragMouseMove);
+    document.removeEventListener('touchend', this.handleShapeDragMouseUp);
   }
-  handleShapeDragMouseMove = (event: MouseEvent): void => {
+
+  handleShapeDragMouseMove = (event: MouseEvent | TouchEvent): void => {
+    const isTouchEvent = event instanceof TouchEvent;
+    const touch = isTouchEvent ? (event as TouchEvent).touches[0] : null;
+    const clientX = isTouchEvent ? touch?.clientX || 0 : (event as MouseEvent).clientX;
+    const clientY = isTouchEvent ? touch?.clientY || 0 : (event as MouseEvent).clientY;
+
     if (this.draggingElement) {
-      const newLeft = event.clientX - this.dragStartX;
-      const newTop = event.clientY - this.dragStartY;
+      const newLeft = clientX - this.dragStartX;
+      const newTop = clientY - this.dragStartY;
 
       // Set new position for the shape
       this.draggingElement.style.left = `${newLeft}px`;
       this.draggingElement.style.top = `${newTop}px`;
 
-      this.dragStartX = event.clientX - newLeft;
-      this.dragStartY = event.clientY - newTop;
+      this.dragStartX = clientX - newLeft;
+      this.dragStartY = clientY - newTop;
     }
   }
 
   handleShapeResizeMouseUp = (): void => {
     this.resizingShape = null;
 
-    // Remove mousemove and mouseup event listeners after resizing
+    // Remove mousemove and mouseup event listeners after resizing for mouse events
     document.removeEventListener('mousemove', this.handleShapeResizeMouseMove);
     document.removeEventListener('mouseup', this.handleShapeResizeMouseUp);
+
+    // Remove touchmove and touchend event listeners after resizing for touch events
+    document.removeEventListener('touchmove', this.handleShapeResizeMouseMove);
+    document.removeEventListener('touchend', this.handleShapeResizeMouseUp);
   }
 
-  handleShapeResizeMouseMove = (event: MouseEvent): void => {
+  handleShapeResizeMouseMove = (event: MouseEvent | TouchEvent): void => {
+    const isTouchEvent = event instanceof TouchEvent;
+    const touch = isTouchEvent ? (event as TouchEvent).touches[0] : null;
+    const clientX = isTouchEvent ? touch?.clientX || 0 : (event as MouseEvent).clientX;
+    const clientY = isTouchEvent ? touch?.clientY || 0 : (event as MouseEvent).clientY;
+
     if (this.resizingShape) {
-      const deltaX = event.clientX - this.resizeStartX;
-      const deltaY = event.clientY - this.resizeStartY;
+      const deltaX = clientX - this.resizeStartX;
+      const deltaY = clientY - this.resizeStartY;
 
       // Ustal środek okręgu i aktualne promienie
       const centerX = this.resizingShape.offsetLeft + this.resizingShape.offsetWidth / 2;
@@ -227,14 +267,25 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       this.resizingShape.style.left = `${centerX - newRadiusX}px`;
       this.resizingShape.style.top = `${centerY - newRadiusY}px`;
 
-      this.resizeStartX = event.clientX;
-      this.resizeStartY = event.clientY;
+      this.resizeStartX = clientX;
+      this.resizeStartY = clientY;
     }
   }
+  activateRubberTool(): void {
+    this.rubberToolActive = !this.rubberToolActive; // Toggle rubber tool state
+    this.rubberButtonColor = this.rubberToolActive ? 'green' : 'black'; // Change button color
+  }
+
+  // Modify the deleteSelectedShape method to handle both div elements and images
   deleteSelectedShape(): void {
     if (this.rubberToolActive && this.selectedElement) {
-      this.selectedElement.remove();
-      this.selectedElement = null;
+      if (
+        this.selectedElement.classList.contains('inserted-shape') ||
+        this.selectedElement.classList.contains('inserted-image')
+      ) {
+        this.selectedElement.remove();
+        this.selectedElement = null;
+      }
     }
   }
 
@@ -260,67 +311,14 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
     // Add mousedown event listener to enable resizing
     shapeElement.addEventListener('mousedown', (event) => this.handleShapeMouseDown(event, shapeElement));
+    shapeElement.addEventListener('touchstart', (event) => this.handleShapeMouseDown(event, shapeElement));
+    shapeElement.addEventListener('click', (event) => this.handleElementClick(event));
+
 
     return shapeElement;
   }
 
 
-
-
-  handleShapeMouseUp = (): void => {
-    this.selectedElement = null;
-
-    // Remove mousemove and mouseup event listeners after dragging
-    document.removeEventListener('mousemove', this.handleShapeMouseMove);
-    document.removeEventListener('mouseup', this.handleShapeMouseUp);
-  }
-
-
-  handleShapeMouseMove = (event: MouseEvent): void => {
-    if (this.selectedElement) {
-      const mouseX = event.clientX - this.startX;
-      const mouseY = event.clientY - this.startY;
-
-      this.selectedElement.style.left = mouseX + 'px';
-      this.selectedElement.style.top = mouseY + 'px';
-    }
-  }
-  rubberButtonColor: any;
-
-
-  handleShapeClick(event: MouseEvent): void {
-    const clickedShape = event.target as HTMLElement;
-
-    if (this.rubberToolActive) {
-      // Delete the clicked shape if the rubber tool is active
-      this.selectedElement = clickedShape;
-      this.deleteSelectedShape();
-    } else {
-      if (this.selectedElement === clickedShape) {
-        // If the clicked shape is already selected, deselect it
-        this.selectedElement = null;
-      } else {
-        // Select the clicked shape
-        this.selectedElement = clickedShape;
-
-        // Move the cursor to the beginning of the container div
-        const containerDiv = clickedShape.closest('.inserted-shape') as HTMLElement;
-        const range = document.createRange();
-        const selection = window.getSelection();
-
-        if (containerDiv) {
-          range.setStart(containerDiv.firstChild || containerDiv, 0);
-          range.collapse(true);
-
-          if (selection) {
-            selection.removeAllRanges();
-            selection.addRange(range);
-          }
-        }
-      }
-    }
-
-  }
 
   setCursorPosition(event: MouseEvent): void {
     const editor = this.editor.nativeElement;
@@ -408,11 +406,27 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
     // Dodajemy obsługę zdarzenia 'mousedown' do obsługi zmiany rozmiaru
     imgElement.addEventListener('mousedown', (event) => this.handleImageMouseDown(event));
-
+    imgElement.addEventListener('touchstart', (event) => this.handleImageMouseDown(event));
+    imgElement.addEventListener('click', (event) => this.handleElementClick(event));
 
 
     return imgElement;
   }
+
+
+  handleElementClick(event: MouseEvent): void {
+    if (this.rubberToolActive) {
+      const clickedElement = event.target as HTMLElement;
+
+      if (
+        clickedElement.classList.contains('inserted-shape') ||
+        clickedElement.classList.contains('inserted-image')
+      ) {
+        clickedElement.remove();
+      }
+    }
+  }
+
   // Function to insert an element at the current cursor position
   insertElementAtCursor(element: HTMLElement): void {
     const selection = window.getSelection();
@@ -429,38 +443,64 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
   // section of resizing photos
 
-  handleImageMouseDown(event: MouseEvent): void {
-    this.resizingImage = event.target as HTMLImageElement;
-    this.startX = event.clientX;
-    this.startY = event.clientY;
+  handleImageMouseDown(event: MouseEvent | TouchEvent): void {
+    // Extract touch details if it's a touch event
+    const isTouchEvent = event instanceof TouchEvent;
+    const touch = isTouchEvent ? (event as TouchEvent).touches[0] : null;
 
-    // Dodajemy nasłuchiwanie na ruch myszy i puszczenie przycisku
-    document.addEventListener('mousemove', this.handleImageMouseMove);
-    document.addEventListener('mouseup', this.handleImageMouseUp);
+    // Get coordinates based on whether it's a mouse or touch event
+    const clientX = isTouchEvent ? touch?.clientX || 0 : (event as MouseEvent).clientX;
+    const clientY = isTouchEvent ? touch?.clientY || 0 : (event as MouseEvent).clientY;
+
+    this.resizingImage = event.target as HTMLImageElement;
+    this.startX = clientX;
+    this.startY = clientY;
+
+    // Add touchmove and touchend event listeners for touch events
+    if (isTouchEvent) {
+      document.addEventListener('touchmove', this.handleImageMouseMove);
+      document.addEventListener('touchend', this.handleImageMouseUp);
+    } else {
+      // Add mousemove and mouseup event listeners for mouse events
+      document.addEventListener('mousemove', this.handleImageMouseMove);
+      document.addEventListener('mouseup', this.handleImageMouseUp);
+    }
   }
 
   handleImageMouseUp = (): void => {
     this.resizingImage = null;
 
-    // Usuwamy nasłuchiwanie na ruch myszy i puszczenie przycisku
+    // Remove mousemove and mouseup event listeners after resizing for mouse events
     document.removeEventListener('mousemove', this.handleImageMouseMove);
     document.removeEventListener('mouseup', this.handleImageMouseUp);
+
+    // Remove touchmove and touchend event listeners after resizing for touch events
+    document.removeEventListener('touchmove', this.handleImageMouseMove);
+    document.removeEventListener('touchend', this.handleImageMouseUp);
   }
 
-  handleImageMouseMove = (event: MouseEvent): void => {
+  handleImageMouseMove = (event: MouseEvent | TouchEvent): void => {
+    // Extract touch details if it's a touch event
+    const isTouchEvent = event instanceof TouchEvent;
+    const touch = isTouchEvent ? (event as TouchEvent).touches[0] : null;
+
+    // Get coordinates based on whether it's a mouse or touch event
+    const clientX = isTouchEvent ? touch?.clientX || 0 : (event as MouseEvent).clientX;
+    const clientY = isTouchEvent ? touch?.clientY || 0 : (event as MouseEvent).clientY;
+
     if (this.resizingImage) {
-      const deltaX = event.clientX - this.startX;
-      const deltaY = event.clientY - this.startY;
+      const deltaX = clientX - this.startX;
+      const deltaY = clientY - this.startY;
 
       const newWidth = Math.max(this.minImageWidth, Math.min(this.maxImageWidth, this.resizingImage.width + deltaX));
       const newHeight = Math.max(this.minImageHeight, Math.min(this.maxImageHeight, this.resizingImage.height + deltaY));
 
-      // Ustawiamy nowe wymiary obrazu
+      // Set new dimensions for the image
       this.resizingImage.style.width = `${newWidth}px`;
       this.resizingImage.style.height = `${newHeight}px`;
 
-      this.startX = event.clientX;
-      this.startY = event.clientY;
+      this.startX = clientX;
+      this.startY = clientY;
     }
   }
 

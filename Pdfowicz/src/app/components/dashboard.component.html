@@ -31,6 +31,7 @@
        #pageContainer>
     <kendo-pdf-export #pdf paperSize="A4">
       <div *ngFor="let page of pages" class="page-textarea" contenteditable="true" (paste)="checkOverflow($event)" (input)="checkOverflow($event)"  #editor>
+        <div><br></div>
       </div>
     </kendo-pdf-export>
   </div>

@@ -54,7 +54,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     if (this.focusPageChanged) {
       this.focusPageChanged = false;
       const newPage = (document.querySelectorAll(".page-textarea")[this.focusPageIndex] as HTMLElement);
-      newPage.innerHTML = this.overflowElements + newPage.innerHTML;
+      newPage.innerHTML = "<div>" + this.overflowElements + "</div>" + newPage.innerHTML;
       newPage.focus();
       this.moveCursorToEnd(newPage);
       this.overflowElements = ""
@@ -91,10 +91,17 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   
       let lastChild = e.lastChild;
       while (e.offsetHeight < e.scrollHeight) {
-        if ((lastChild as Element).tagName == "DIV"){
+        if ((lastChild as Element).tagName == "DIV") {
           let lastCharacter = (lastChild as Element).innerHTML.slice(-1);
-          this.overflowElements = lastCharacter + this.overflowElements;
-          (lastChild as Element).innerHTML = (lastChild as Element).innerHTML.slice(0, -1);
+        
+          let brTagIndex = (lastChild as Element).innerHTML.lastIndexOf("<br>");
+          if (brTagIndex !== -1) {
+            this.overflowElements = "<br>" + this.overflowElements;
+            (lastChild as Element).innerHTML = (lastChild as Element).innerHTML.substring(0, brTagIndex);
+          } else {
+            this.overflowElements = lastCharacter + this.overflowElements;
+            (lastChild as Element).innerHTML = (lastChild as Element).innerHTML.slice(0, -1);
+          }
 
           if ((lastChild as Element).innerHTML == "") {
             lastChild.remove();

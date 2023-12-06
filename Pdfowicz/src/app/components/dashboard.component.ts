@@ -52,11 +52,10 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
 
   ngAfterViewChecked(): void {
-    if (this.focusPageChanged) {
-      this.focusPageChanged = false;
+    if (this.overflowElements != "") {
       const newPage = (document.querySelectorAll(".page-textarea")[this.focusPageIndex] as HTMLElement);
       newPage.innerHTML = this.overflowElements + newPage.innerHTML;
-      this.moveCursorToEnd(newPage);
+      // this.moveCursorToEnd(newPage);
       this.overflowElements = "";
       newPage.dispatchEvent(new InputEvent('input', { bubbles: true }));
     }
@@ -68,7 +67,6 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
   //Code for multiple pages generation
   checkOverflow(event: Event) {
-    event.preventDefault();
     let e = event.target as HTMLElement;
   
     if (!(e.classList.contains("page-textarea"))) {
@@ -76,19 +74,6 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     }
   
     if (e.innerHTML !== '' || this.pages.length === 1) {
-      let contentToAppend = '';
-  
-      if (event.type === 'paste') {
-        const clipboardData = (event as ClipboardEvent).clipboardData || (window as any).clipboardData;
-        contentToAppend = clipboardData.getData('text/plain');
-        const selection = window.getSelection();
-        if (selection) {
-          const range = selection.getRangeAt(0);
-          range.deleteContents();
-          range.insertNode(document.createTextNode(contentToAppend));
-        }
-      }
-  
       let lastChild = (e.lastChild as HTMLElement);
       while (e.offsetHeight < e.scrollHeight) {
         if (lastChild.nodeType === Node.TEXT_NODE) {
@@ -128,7 +113,6 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   
       if (this.overflowElements !== '') {
         this.focusPageIndex = Array.from(document.querySelectorAll('.page-textarea')).indexOf(e) + 1;
-        this.focusPageChanged = true;
         if (!this.pages[this.focusPageIndex]) {
           this.pageID += 1;
           this.pages.splice(this.focusPageIndex, 0, this.pageID);
@@ -138,21 +122,20 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       let pageIndexNumber = Array.from(document.querySelectorAll('.page-textarea')).indexOf(e);
       this.pages.splice(pageIndexNumber, 1);
       this.focusPageIndex = pageIndexNumber - 1;
-      this.focusPageChanged = true;
     }
   }
   
-  moveCursorToEnd(element: HTMLElement): void {
-    const range = document.createRange();
-    const selection = window.getSelection();
+  // moveCursorToEnd(element: HTMLElement): void {
+  //   const range = document.createRange();
+  //   const selection = window.getSelection();
 
-    if (selection) {
-      range.selectNodeContents(element);
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
-  }
+  //   if (selection) {
+  //     range.selectNodeContents(element);
+  //     range.collapse(false);
+  //     selection.removeAllRanges();
+  //     selection.addRange(range);
+  //   }
+  // }
 
   insertShape(shape: string): void {
     if (shape === 'rubber') {

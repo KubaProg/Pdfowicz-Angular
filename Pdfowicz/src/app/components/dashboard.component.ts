@@ -46,6 +46,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   constructor(private cdr: ChangeDetectorRef) {}
 
   ngAfterViewInit(): void {
+    document.querySelector(".page-textarea").innerHTML = '<div><br></div>';
     drawScene(this.surface);
   }
 
@@ -54,10 +55,10 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     if (this.focusPageChanged) {
       this.focusPageChanged = false;
       const newPage = (document.querySelectorAll(".page-textarea")[this.focusPageIndex] as HTMLElement);
-      newPage.innerHTML = "<div>" + this.overflowElements + "</div>" + newPage.innerHTML;
-      newPage.focus();
+      newPage.innerHTML = this.overflowElements + newPage.innerHTML;
       this.moveCursorToEnd(newPage);
-      this.overflowElements = ""
+      this.overflowElements = "";
+      newPage.dispatchEvent(new InputEvent('input', { bubbles: true }));
     }
   }
 
@@ -65,14 +66,13 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     this.pdf.saveAs('document.pdf');
   }
 
-
   //Code for multiple pages generation
   checkOverflow(event: Event) {
     event.preventDefault();
     let e = event.target as HTMLElement;
   
     if (!(e.classList.contains("page-textarea"))) {
-      e = e.closest(".page-textarea")
+      e = e.closest(".page-textarea");
     }
   
     if (e.innerHTML !== '' || this.pages.length === 1) {
@@ -89,29 +89,40 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
         }
       }
   
-      let lastChild = e.lastChild;
+      let lastChild = (e.lastChild as HTMLElement);
       while (e.offsetHeight < e.scrollHeight) {
-        if ((lastChild as Element).tagName == "DIV") {
-          let lastCharacter = (lastChild as Element).innerHTML.slice(-1);
-        
-          let brTagIndex = (lastChild as Element).innerHTML.lastIndexOf("<br>");
-          if (brTagIndex !== -1) {
-            this.overflowElements = "<br>" + this.overflowElements;
-            (lastChild as Element).innerHTML = (lastChild as Element).innerHTML.substring(0, brTagIndex);
-          } else {
-            this.overflowElements = lastCharacter + this.overflowElements;
-            (lastChild as Element).innerHTML = (lastChild as Element).innerHTML.slice(0, -1);
-          }
+        if (lastChild.nodeType === Node.TEXT_NODE) {
+          var newDivElement = document.createElement("div");
+          newDivElement.textContent = lastChild.nodeValue;
+          e.replaceChild(newDivElement, lastChild);
+          lastChild = (e.lastChild as HTMLElement);
+        }
 
-          if ((lastChild as Element).innerHTML == "") {
+        if (lastChild.tagName == "DIV") {
+          lastChild.innerHTML = lastChild.innerHTML.replace(/<span\s+([^>]*)>|<\/span>/g, '').replace(/<br[^>]*>/g, "<br>");
+          
+          let lastCharacter = "";
+          let sliceCharacters = 1;
+          if (lastChild.innerHTML.slice(-4) == "<br>") {
+            sliceCharacters = 4;
+          }
+          else if (lastChild.innerHTML.slice(-6) == "&nbsp;") {
+            sliceCharacters = 6;
+          }
+          lastCharacter = lastChild.innerHTML.slice(-sliceCharacters);
+                 
+          this.overflowElements = lastCharacter + this.overflowElements;
+          lastChild.innerHTML = lastChild.innerHTML.slice(0, -sliceCharacters);
+
+          if (lastChild.innerHTML == "") {
             lastChild.remove();
-            lastChild = e.lastChild;
+            lastChild = e.lastChild as HTMLElement;
           }
         }
         else {
-          this.overflowElements = (lastChild as Element).outerHTML + this.overflowElements;
+          this.overflowElements = lastChild.outerHTML + this.overflowElements;
           lastChild.remove();
-          lastChild = e.lastChild;
+          lastChild = e.lastChild as HTMLElement;
         }
       }
   
@@ -124,8 +135,9 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
         }
       }
     } else {
-      this.pages.splice(Array.from(document.querySelectorAll('.page-textarea')).indexOf(e), 1);
-      this.focusPageIndex = Array.from(document.querySelectorAll('.page-textarea')).indexOf(e) - 1;
+      let pageIndexNumber = Array.from(document.querySelectorAll('.page-textarea')).indexOf(e);
+      this.pages.splice(pageIndexNumber, 1);
+      this.focusPageIndex = pageIndexNumber - 1;
       this.focusPageChanged = true;
     }
   }

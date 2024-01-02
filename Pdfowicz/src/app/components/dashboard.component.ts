@@ -153,6 +153,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   }
 
   handleShapeMouseDown(event: MouseEvent | TouchEvent, shapeElement: HTMLElement): void {
+
     // Extract touch details if it's a touch event
     const isTouchEvent = event instanceof TouchEvent;
     const touch = isTouchEvent ? (event as TouchEvent).touches[0] : null;
@@ -204,6 +205,13 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
         }
       }
     }
+
+    this.draggingElement = shapeElement;
+    const rect = shapeElement.getBoundingClientRect();
+    this.dragStartX = clientX - rect.left;
+    this.dragStartY = clientY - rect.top;
+
+
   }
 
   handleShapeDragMouseUp = (): void => {
@@ -225,17 +233,62 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     const clientY = isTouchEvent ? touch?.clientY || 0 : (event as MouseEvent).clientY;
 
     if (this.draggingElement) {
-      const newLeft = clientX - this.dragStartX;
-      const newTop = clientY - this.dragStartY;
+      // Get the parent page-textarea element
+      const parentContainer = this.draggingElement.closest('.page-textarea');
+      if (parentContainer) {
+        const parentRect = parentContainer.getBoundingClientRect();
 
-      // Set new position for the shape
-      this.draggingElement.style.left = `${newLeft}px`;
-      this.draggingElement.style.top = `${newTop}px`;
+        // Calculate new position
+        let newLeft = clientX - this.dragStartX - parentRect.left;
+        let newTop = clientY - this.dragStartY - parentRect.top;
 
-      this.dragStartX = clientX - newLeft;
-      this.dragStartY = clientY - newTop;
+        // Check left boundary
+        if (newLeft < 0) {
+          newLeft = 0;
+        }
+
+        // Check right boundary
+        if (newLeft + this.draggingElement.offsetWidth > parentRect.width) {
+          newLeft = parentRect.width - this.draggingElement.offsetWidth;
+        }
+
+        // Check top boundary
+        if (newTop < 0) {
+          newTop = 0;
+        }
+
+        // Check bottom boundary
+        if (newTop + this.draggingElement.offsetHeight > parentRect.height) {
+          newTop = parentRect.height - this.draggingElement.offsetHeight;
+        }
+
+        // Set new position for the shape
+        this.draggingElement.style.left = `${newLeft}px`;
+        this.draggingElement.style.top = `${newTop}px`;
+
+        this.dragStartX = clientX - newLeft - parentRect.left;
+        this.dragStartY = clientY - newTop - parentRect.top;
+      }
     }
+
+    if (this.draggingElement) {
+      const parentContainer = this.draggingElement.closest('.page-textarea');
+      if (parentContainer) {
+        const parentRect = parentContainer.getBoundingClientRect();
+
+        // Calculate new position using the constant offset values
+        let newLeft = clientX - this.dragStartX - parentRect.left;
+        let newTop = clientY - this.dragStartY - parentRect.top;
+
+        // Boundary checks...
+        // Set new position for the shape
+        this.draggingElement.style.left = `${newLeft}px`;
+        this.draggingElement.style.top = `${newTop}px`;
+      }
+    }
+
   }
+
 
   handleShapeResizeMouseUp = (): void => {
     this.resizingShape = null;

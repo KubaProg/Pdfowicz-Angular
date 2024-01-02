@@ -21,10 +21,8 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   private startY: number = 0;
   pages: number[] = [1];
   private pageID : number = 1;
-  private selectedElement: HTMLElement | null = null;
   private overflowElements : string = "";
   private focusPageIndex = 0;
-  private focusPageChanged = false;
   private rubberToolActive = false;
   public draggingFile = false;
   private readonly minImageWidth = 50;
@@ -68,11 +66,11 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   //Code for multiple pages generation
   checkOverflow(event: Event) {
     let e = event.target as HTMLElement;
-  
+
     if (!(e.classList.contains("page-textarea"))) {
       e = e.closest(".page-textarea");
     }
-  
+
     if (e.innerHTML !== '' || this.pages.length === 1) {
       let lastChild = (e.lastChild as HTMLElement);
       while (e.offsetHeight < e.scrollHeight) {
@@ -85,7 +83,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
         if (lastChild.tagName == "DIV") {
           lastChild.innerHTML = lastChild.innerHTML.replace(/<span\s+([^>]*)>|<\/span>/g, '').replace(/<br[^>]*>/g, "<br>");
-          
+
           let lastCharacter = "";
           let sliceCharacters = 1;
           if (lastChild.innerHTML.slice(-4) == "<br>") {
@@ -95,7 +93,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
             sliceCharacters = 6;
           }
           lastCharacter = lastChild.innerHTML.slice(-sliceCharacters);
-                 
+
           this.overflowElements = lastCharacter + this.overflowElements;
           lastChild.innerHTML = lastChild.innerHTML.slice(0, -sliceCharacters);
 
@@ -110,7 +108,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
           lastChild = e.lastChild as HTMLElement;
         }
       }
-  
+
       if (this.overflowElements !== '') {
         this.focusPageIndex = Array.from(document.querySelectorAll('.page-textarea')).indexOf(e) + 1;
         if (!this.pages[this.focusPageIndex]) {
@@ -124,18 +122,6 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       this.focusPageIndex = pageIndexNumber - 1;
     }
   }
-  
-  // moveCursorToEnd(element: HTMLElement): void {
-  //   const range = document.createRange();
-  //   const selection = window.getSelection();
-
-  //   if (selection) {
-  //     range.selectNodeContents(element);
-  //     range.collapse(false);
-  //     selection.removeAllRanges();
-  //     selection.addRange(range);
-  //   }
-  // }
 
   insertShape(shape: string): void {
     if (shape === 'rubber') {
@@ -155,7 +141,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
         range.insertNode(shapeElement);
 
         // Set focus on the editor
-        this.editor.nativeElement.focus();
+        // this.editor.nativeElement.focus();
 
         // Set selection range to the end of the non-breaking space
         selection?.collapse(spaceNode, 1);
@@ -298,31 +284,21 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     this.rubberButtonColor = this.rubberToolActive ? 'green' : 'black'; // Change button color
   }
 
-  // Modify the deleteSelectedShape method to handle both div elements and images
-  deleteSelectedShape(): void {
-    if (this.rubberToolActive && this.selectedElement) {
-      if (
-        this.selectedElement.classList.contains('inserted-shape') ||
-        this.selectedElement.classList.contains('inserted-image')
-      ) {
-        this.selectedElement.remove();
-        this.selectedElement = null;
-      }
-    }
-  }
-
-
   createShapeElement(shape: string): HTMLElement {
     const shapeElement = document.createElement('div');
     shapeElement.classList.add('inserted-shape');
-    shapeElement.style.width = '50px';
-    shapeElement.style.height = '50px';
+    shapeElement.style.width = '150px';
+    shapeElement.style.height = '150px';
     shapeElement.style.position = 'absolute';
     shapeElement.style.cursor = 'grab'; // Set cursor to indicate draggable element
 
     if (shape === 'square') {
       shapeElement.style.backgroundColor = 'red'; // Replace with your styling for a square
+      shapeElement.style.width = '150px';
+      shapeElement.style.height = '150px';
     } else if (shape === 'rectangle') {
+      shapeElement.style.width = '150px';
+      shapeElement.style.height = '70px';
       shapeElement.style.backgroundColor = 'blue'; // Replace with your styling for a rectangle
     } else if (shape === 'circle') {
       shapeElement.style.backgroundColor = 'green'; // Replace with your styling for a circle
@@ -375,31 +351,34 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
         .then((result: string) => {
           const imgElement = this.createImageElement(result);
 
-          // Pobieramy aktualny zakres zaznaczenia
           const selection = window.getSelection();
-          const range = selection?.getRangeAt(0);
-
-          if (range && !range.collapsed) {
-            // Jeśli coś jest zaznaczone, wstawiamy obraz w miejscu aktualnego zakresu
+          if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
             range.deleteContents();
             range.insertNode(imgElement);
+
+            // Move the cursor after the image
+            const newRange = document.createRange();
+            newRange.setStartAfter(imgElement);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
           } else {
-            // Jeśli nic nie jest zaznaczone, dodajemy obraz na koniec edytora
+            // If no selection is found, append to the end of the editor or handle as needed
             this.editor.nativeElement.appendChild(imgElement);
           }
 
           this.editor.nativeElement.focus();
-          this.cdr.detectChanges(); // Wykrywamy zmiany, aby zaktualizować widok
+          this.cdr.detectChanges();
         })
         .catch((error) => {
-          console.error('Błąd odczytu pliku:', error);
+          console.error('Error reading file:', error);
         })
         .finally(() => {
-          // Resetujemy wartość elementu wejściowego, aby umożliwić dodanie tego samego pliku ponownie
           fileInput.value = '';
         });
     }
   }
+
 
   private readFileAsDataURL(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -446,19 +425,6 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       ) {
         clickedElement.remove();
       }
-    }
-  }
-
-  // Function to insert an element at the current cursor position
-  insertElementAtCursor(element: HTMLElement): void {
-    const selection = window.getSelection();
-    const range = selection?.getRangeAt(0);
-
-    if (range) {
-      range.deleteContents();
-      range.insertNode(element);
-      this.editor.nativeElement.focus();
-      this.cdr.detectChanges(); // Detect changes to update the view
     }
   }
 
@@ -580,5 +546,178 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     event.preventDefault();
     this.draggingFile = false;
   }
+
+  importCsvOrJson() {
+    const documentInput = document.getElementById('documentInput') as HTMLInputElement;
+
+    // Resetujemy wartość elementu wejściowego, aby umożliwić dodanie tego samego pliku ponownie
+    documentInput.value = '';
+
+    // Trigger the click event on the hidden file input
+    documentInput.click();
+  }
+
+  handleDocumentInput(event: any): void {
+    const fileInput = event.target;
+    const file = fileInput.files[0];
+
+    if (file && file.type === 'text/csv') {
+      this.readFileAsText(file)
+        .then((csvText: string) => {
+          const tableElements = this.createTableElementFromCsv(csvText);
+          tableElements.forEach((table, index) => {
+            if (index === 0) {
+              this.insertTableAtCursor(table);
+            } else {
+              if (this.pages.length > index) {
+                this.insertTableInExistingPage(table, index);
+              } else {
+                this.createNewPageWithTable(table);
+              }
+            }
+          });
+
+          this.cdr.detectChanges();
+        })
+        .catch((error) => {
+          console.error('Error reading file:', error);
+        })
+        .finally(() => {
+          fileInput.value = '';
+        });
+    }
+  }
+
+  insertTableInExistingPage(table: HTMLElement, pageIndex: number): void {
+    const pages = this.editor.nativeElement.querySelectorAll('.page-textarea');
+    if (pages.length > pageIndex) {
+      const page = pages[pageIndex];
+      page.appendChild(table);
+    }
+  }
+
+
+  insertTableAtCursor(table: HTMLElement): void {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(table);
+    } else {
+      this.editor.nativeElement.appendChild(table);
+    }
+  }
+
+  createNewPageWithTable(table: HTMLElement): void {
+    // Create and append a new page element
+    const newPage = document.createElement('div');
+    newPage.classList.add('page-textarea');
+    newPage.contentEditable = 'true';
+    this.editor.nativeElement.appendChild(newPage);
+
+    // Append the table to the new page
+    newPage.appendChild(table);
+
+    // Update the pages array
+    this.pageID += 1;
+    this.pages.push(this.pageID);
+
+    // Set cursor to the beginning of the new page
+    this.setCursorToBeginningOfElement(newPage);
+
+    // Trigger change detection
+    this.cdr.detectChanges();
+  }
+
+  setCursorToBeginningOfElement(element: HTMLElement): void {
+    const range = document.createRange();
+    const selection = window.getSelection();
+    range.setStart(element, 0);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+
+
+
+
+
+  readFileAsText(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(file);
+    });
+  }
+
+  createTableElementFromCsv(csvText: string): HTMLElement[] {
+    const parsedData = this.parseCsv(csvText);
+    const tables = [];
+    let table, headerRow, tableWrapper;
+
+    const createHeader = () => {
+      headerRow = document.createElement('tr');
+      Object.keys(parsedData[0]).forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header;
+        th.style.border = '1px solid black';
+        th.style.padding = '5px';
+        headerRow.appendChild(th);
+      });
+    };
+
+    parsedData.forEach((row, index) => {
+      // For every 20 rows or at start, create a new table
+      if (index % 20 === 0 || index === 0) {
+        table = document.createElement('table');
+        table.style.borderCollapse = 'collapse';
+
+        createHeader();
+        table.appendChild(headerRow.cloneNode(true));
+
+        // Create a wrapper div for the table
+        tableWrapper = document.createElement('div');
+        tableWrapper.className = 'inserted-table';
+        tableWrapper.appendChild(table);
+
+        tables.push(tableWrapper); // Push the wrapper instead of the table
+      }
+
+      // Create a table row
+      const tr = document.createElement('tr');
+      Object.values(row).forEach(value => {
+        const td = document.createElement('td');
+        if (typeof value === "string") {
+          td.textContent = value;
+        }
+        td.style.border = '1px solid black';
+        td.style.padding = '5px';
+        tr.appendChild(td);
+      });
+      table.appendChild(tr);
+    });
+
+    return tables;
+  }
+
+
+
+
+  // @ts-ignore
+  parseCsv(csvText: string): any[] {
+    const lines = csvText.split('\n');
+    const headers = lines[0].split(',');
+
+    return lines.slice(1).map(line => {
+      const cells = line.split(',');
+      return headers.reduce((obj, nextKey, index) => {
+        obj[nextKey] = cells[index];
+        return obj;
+      }, {});
+    });
+  }
+
 
 }

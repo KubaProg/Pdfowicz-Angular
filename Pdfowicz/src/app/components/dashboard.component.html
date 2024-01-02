@@ -1,5 +1,5 @@
 <div class="editor" (dragover)="handleDragOver($event)" (drop)="handleDrop($event)">
-  <h1>PDF Editor</h1>
+  <img src="assets/logoPdfowicz.jpg" alt="" height="100px" width="300px">
 
   <div class="toolbar">
     <button mat-icon-button (click)="insertShape('square')">
@@ -18,7 +18,10 @@
     <button mat-icon-button (click)="activateRubberTool()" [style.color]="rubberButtonColor">
       <mat-icon>highlight_off</mat-icon>
     </button>
-
+    <input type="file" id="documentInput" style="display: none" (change)="handleDocumentInput($event)">
+    <button mat-icon-button (click)="importCsvOrJson()">
+      <mat-icon>import_export</mat-icon>
+    </button>
   </div>
 
   <div class="page-container"

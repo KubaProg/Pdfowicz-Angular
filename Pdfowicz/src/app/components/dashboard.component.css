@@ -1,16 +1,21 @@
 /* editor.component.css */
+body {
+  background-color: #f4f4f4; /* Light grey background for a modern look */
+  font-family: 'Arial', sans-serif; /* Use a modern font */
+}
+
 .editor {
-  background-color: white;
-  border: 1px solid #ccc;
-  padding: 20px;
-  margin-bottom: 20px;
-  width: 80vw; /* Ustawienie szerokości na 80% szerokości widoku */
-  max-width: 800px; /* Ustawienie maksymalnej szerokości dla lepszej responsywności */
-  margin: auto;
+  background-color: #fff; /* White background for the editor */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  /* Other styles remain unchanged */
 }
 
 .page-container {
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* This will center the child horizontally */
+  padding: 10px; /* This adds spacing from the borders of the screen */
+  margin: 0 auto; /* This centers the container itself if it has a set width */
 }
 
 svg{
@@ -33,10 +38,39 @@ svg{
 }
 
 .toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 10px;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 10px;
+  border-radius: 5px; /* Rounded corners */
+
+  display: flex; /* Flex layout for inner items */
+  justify-content: center; /* Center flex items horizontally */
+  align-items: center; /* Center flex items vertically */
+
+  position: sticky; /* Stick to the top */
+  top: 0; /* Top of the viewport */
+  z-index: 1000; /* Ensure it's above other content */
+
+  width: 80%; /* Match the width of your editor or adjust as needed */
+  max-width: 800px; /* Maximum width */
+  margin-left: auto; /* Center the toolbar horizontally */
+  margin-right: auto; /* Center the toolbar horizontally */
 }
+
+/* Update button styles for a more modern look */
+.toolbar button {
+  background-color: #e0e0e0; /* Light grey background */
+  border: none;
+  border-radius: 3px;
+  padding: 8px 10px;
+  margin: 0 5px;
+  transition: background-color 0.3s;
+}
+
+.toolbar button:hover {
+  background-color: #d5d5d5; /* Slightly darker on hover */
+}
+
 
 .insert-button {
   margin-left: 10px;
@@ -47,8 +81,9 @@ svg{
 }
 
 .page-container {
-  position: relative;
-  cursor: text;
+  background-color: #fff; /* White background for clarity */
+  border-radius: 5px;
+  /* Other styles remain unchanged */
 }
 
 .inserted-shape {
@@ -86,5 +121,34 @@ svg{
 .draggable {
   cursor: grab;
 }
+
+
+
+@media only screen and (max-width: 480px) {
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap; /* Allow items to wrap */
+    justify-content: space-around; /* Space items evenly */
+  }
+
+  .toolbar > * {
+    flex: 0 0 30%; /* Each item takes up about one-third of the toolbar's width */
+    margin-bottom: 5px; /* Space between rows */
+    text-align: center; /* Center content within each item */
+  }
+
+  .editor {
+    padding: 10px 0; /* Top and bottom padding */
+  }
+
+  .page-textarea {
+    width: calc(100vw - 20px); /* Adjust width for padding */
+    height: 842px; /* Flexible height */
+    box-shadow: none; /* Remove shadow if present */
+  }
+}
+
+
+
 
 

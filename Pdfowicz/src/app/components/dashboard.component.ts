@@ -44,7 +44,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   constructor(private cdr: ChangeDetectorRef) {}
 
   ngAfterViewInit(): void {
-    document.querySelector(".page-textarea").innerHTML = '<div><br></div>';
+    document.querySelector(".page-textarea").innerHTML = '<div><br/></div>';
     drawScene(this.surface);
   }
 
@@ -128,29 +128,21 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       // Toggle the active state of the rubber tool
       this.rubberToolActive = !this.rubberToolActive;
     } else {
-      const selection = window.getSelection();
-      const range = selection?.getRangeAt(0);
-
-      if (range) {
-        const shapeElement = this.createShapeElement(shape);
-
-        // Insert a non-breaking space along with the shape
-        const spaceNode = document.createTextNode('\u00A0');
-        range.deleteContents();
-        range.insertNode(spaceNode);
-        range.insertNode(shapeElement);
-
-        // Set focus on the editor
-        // this.editor.nativeElement.focus();
-
-        // Set selection range to the end of the non-breaking space
-        selection?.collapse(spaceNode, 1);
-      }
+      // Create and insert the shape element
+      const shapeElement = this.createShapeElement(shape);
     }
 
     // Change the color of the rubber tool button based on the active state
     this.rubberToolActive ? this.rubberButtonColor = 'green' : this.rubberButtonColor = 'black';
   }
+
+  isSelectionInsideShape(range: Range): boolean {
+    // Check if the selection is inside an inserted-shape class
+    const commonAncestorContainer = range.commonAncestorContainer;
+    return commonAncestorContainer instanceof HTMLElement && commonAncestorContainer.classList.contains('inserted-shape');
+  }
+
+
 
   handleShapeMouseDown(event: MouseEvent | TouchEvent, shapeElement: HTMLElement): void {
 
@@ -365,6 +357,8 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     shapeElement.addEventListener('touchstart', (event) => this.handleShapeMouseDown(event, shapeElement));
     shapeElement.addEventListener('click', (event) => this.handleElementClick(event));
 
+    // Append the shape to the page container
+    this.pageTextarea.nativeElement.appendChild(shapeElement);
 
     return shapeElement;
   }

@@ -33,7 +33,7 @@
        [ngClass]="{'dragging-file': draggingFile}"
        #pageContainer>
     <kendo-pdf-export #pdf paperSize="A4">
-      <div *ngFor="let page of pages" class="page-textarea" contenteditable="true" (input)="checkOverflow($event)"  #editor>
+      <div *ngFor="let page of pages" class="page-textarea" contenteditable="true" (input)="checkOverflow($event)"  #pageTextarea>
       </div>
     </kendo-pdf-export>
   </div>

@@ -347,7 +347,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       shapeElement.style.backgroundColor = 'blue'; // Replace with your styling for a rectangle
     } else if (shape === 'circle') {
       shapeElement.style.backgroundColor = 'green'; // Replace with your styling for a circle
-      shapeElement.style.borderRadius = '50%';
+      shapeElement.style.borderRadius = '100%';
     } else {
       shapeElement.style.backgroundColor = 'gray'; // Default styling
     }
@@ -646,10 +646,21 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
   insertTableAtCursor(table: HTMLElement): void {
     const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      range.deleteContents();
-      range.insertNode(table);
+
+    if (selection) {
+      const anchorNode = selection.anchorNode as Node | null;
+
+      if (anchorNode instanceof Element) {
+        const parentContainer = anchorNode.closest('.page-textarea');
+
+        if (parentContainer) {
+          const range = selection.getRangeAt(0);
+          range.deleteContents();
+          range.insertNode(table);
+        } else {
+          console.warn("Selection is not within an element with the class 'page-textarea'.");
+        }
+      }
     } else {
       this.editor.nativeElement.appendChild(table);
     }

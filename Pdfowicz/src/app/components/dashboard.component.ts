@@ -128,13 +128,50 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       // Toggle the active state of the rubber tool
       this.rubberToolActive = !this.rubberToolActive;
     } else {
-      // Create and insert the shape element
-      const shapeElement = this.createShapeElement(shape);
-    }
+      const selection = window.getSelection();
 
-    // Change the color of the rubber tool button based on the active state
-    this.rubberToolActive ? this.rubberButtonColor = 'green' : this.rubberButtonColor = 'black';
+      if (selection) {
+        const anchorNode = selection.anchorNode;
+
+        if (anchorNode && !(anchorNode instanceof HTMLElement && anchorNode.classList.contains('inserted-shape'))) {
+          let parentContainer: Element | null = null;
+
+          if (anchorNode.nodeType === Node.ELEMENT_NODE) {
+            // If anchorNode is an element, check its closest parent with class 'page-textarea'
+            parentContainer = (anchorNode as Element).closest('.page-textarea');
+          } else if (anchorNode.nodeType === Node.TEXT_NODE) {
+            // If anchorNode is a text node, check its parent element and then closest parent with class 'page-textarea'
+            const parentElement = (anchorNode as Text).parentElement;
+            parentContainer = parentElement ? parentElement.closest('.page-textarea') : null;
+          }
+
+          if (parentContainer) {
+            const range = selection.getRangeAt(0);
+
+            // Your code to create and insert the shapeElement goes here
+            const shapeElement = this.createShapeElement(shape);
+            const spaceNode = document.createTextNode('\u00A0');
+
+            range.deleteContents();
+            range.insertNode(spaceNode);
+            range.insertNode(shapeElement);
+
+            // Set focus on the editor
+            // this.editor.nativeElement.focus();
+
+            // Set selection range to the end of the non-breaking space
+            selection?.collapse(spaceNode, 1);
+
+            // Change the color of the rubber tool button based on the active state
+            this.rubberToolActive ? this.rubberButtonColor = 'green' : this.rubberButtonColor = 'black';
+          } else {
+            console.warn("Selection is not within an element with the class 'page-textarea'.");
+          }
+        }
+      }
+    }
   }
+
 
   isSelectionInsideShape(range: Range): boolean {
     // Check if the selection is inside an inserted-shape class
@@ -347,7 +384,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       shapeElement.style.backgroundColor = 'blue'; // Replace with your styling for a rectangle
     } else if (shape === 'circle') {
       shapeElement.style.backgroundColor = 'green'; // Replace with your styling for a circle
-      shapeElement.style.borderRadius = '100%';
+      shapeElement.style.borderRadius = '50%';
     } else {
       shapeElement.style.backgroundColor = 'gray'; // Default styling
     }
@@ -357,13 +394,9 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     shapeElement.addEventListener('touchstart', (event) => this.handleShapeMouseDown(event, shapeElement));
     shapeElement.addEventListener('click', (event) => this.handleElementClick(event));
 
-    // Append the shape to the page container
-    this.pageTextarea.nativeElement.appendChild(shapeElement);
 
     return shapeElement;
   }
-
-
 
   setCursorPosition(event: MouseEvent): void {
     const editor = this.editor.nativeElement;

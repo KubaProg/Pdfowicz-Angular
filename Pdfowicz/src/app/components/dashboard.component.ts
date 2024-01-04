@@ -335,17 +335,30 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       const deltaX = clientX - this.resizeStartX;
       const deltaY = clientY - this.resizeStartY;
 
-      if (this.resizingShape.classList.contains('square')) { // Sprawdź, czy to kwadrat
-        // Ustal początkowe współrzędne środka kwadratu
-        const initialCenterX = this.resizingShape.offsetLeft + this.resizingShape.offsetWidth / 2;
-        const initialCenterY = this.resizingShape.offsetTop + this.resizingShape.offsetHeight / 2;
+      // Ustal środek kwadratu i aktualną szerokość
+      const centerX = this.resizingShape.offsetLeft + this.resizingShape.offsetWidth / 2;
+      const centerY = this.resizingShape.offsetTop + this.resizingShape.offsetHeight / 2;
+      const currentWidth = this.resizingShape.offsetWidth;
 
-        // Ustal aktualną szerokość
-        const currentWidth = this.resizingShape.offsetWidth;
+      // Przeskaluj szerokość proporcjonalnie tylko dla kwadratów
+      const newWidth = Math.max(this.minImageWidth, Math.min(this.maxImageWidth, currentWidth + deltaX));
 
-        // Przeskaluj szerokość proporcjonalnie
-        const newWidth = Math.max(this.minSquareSize, Math.min(this.maxSquareSize, currentWidth + deltaX));
+      // Pobierz początkowe współrzędne środka przed aktualizacją szerokości
+      const initialCenterX = centerX - deltaX / 2;
+      const initialCenterY = centerY - deltaY / 2;
 
+      // Pobierz kontener .page-textarea
+      const container = this.pageTextarea.nativeElement;
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+
+      // Sprawdź, czy kształt wychodzi poza kontener
+      if (
+        initialCenterX - newWidth / 2 >= 0 &&
+        initialCenterX + newWidth / 2 <= containerWidth &&
+        initialCenterY - newWidth / 2 >= 0 &&
+        initialCenterY + newWidth / 2 <= containerHeight
+      ) {
         // Ustaw nową szerokość i pozycję dla kwadratu
         this.resizingShape.style.width = `${newWidth}px`;
         this.resizingShape.style.height = `${newWidth}px`;
@@ -353,26 +366,10 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
         // Dostosuj pozycję na podstawie początkowych współrzędnych środka
         this.resizingShape.style.left = `${initialCenterX - newWidth / 2}px`;
         this.resizingShape.style.top = `${initialCenterY - newWidth / 2}px`;
-      } else {
-        // Ustal środek kształtu i aktualne promienie
-        const centerX = this.resizingShape.offsetLeft + this.resizingShape.offsetWidth / 2;
-        const centerY = this.resizingShape.offsetTop + this.resizingShape.offsetHeight / 2;
-        const currentRadiusX = this.resizingShape.offsetWidth / 2;
-        const currentRadiusY = this.resizingShape.offsetHeight / 2;
 
-        // Przeskaluj promienie proporcjonalnie
-        const newRadiusX = Math.max(this.minImageWidth / 2, Math.min(this.maxImageWidth / 2, currentRadiusX + deltaX / 2));
-        const newRadiusY = Math.max(this.minImageHeight / 2, Math.min(this.maxImageHeight / 2, currentRadiusY + deltaY / 2));
-
-        // Ustaw nowe promienie i pozycję dla kształtu
-        this.resizingShape.style.width = `${newRadiusX * 2}px`;
-        this.resizingShape.style.height = `${newRadiusY * 2}px`;
-        this.resizingShape.style.left = `${centerX - newRadiusX}px`;
-        this.resizingShape.style.top = `${centerY - newRadiusY}px`;
+        this.resizeStartX = clientX;
+        this.resizeStartY = clientY;
       }
-
-      this.resizeStartX = clientX;
-      this.resizeStartY = clientY;
     }
   }
 

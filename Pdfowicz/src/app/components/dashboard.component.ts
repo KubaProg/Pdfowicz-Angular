@@ -335,44 +335,67 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       const deltaX = clientX - this.resizeStartX;
       const deltaY = clientY - this.resizeStartY;
 
-      // Ustal środek kwadratu i aktualną szerokość
+      // Ustal środek kształtu i aktualne wymiary
       const centerX = this.resizingShape.offsetLeft + this.resizingShape.offsetWidth / 2;
       const centerY = this.resizingShape.offsetTop + this.resizingShape.offsetHeight / 2;
       const currentWidth = this.resizingShape.offsetWidth;
+      const currentHeight = this.resizingShape.offsetHeight;
 
-      // Przeskaluj szerokość proporcjonalnie tylko dla kwadratów
-      const newWidth = Math.max(this.minImageWidth, Math.min(this.maxImageWidth, currentWidth + deltaX));
+      // Przeskaluj wymiary proporcjonalnie tylko dla kwadratów
+      if (this.resizingShape.classList.contains('square')) {
+        const newDimension = Math.max(this.minImageWidth, Math.min(this.maxImageWidth, currentWidth + deltaX));
 
-      // Pobierz początkowe współrzędne środka przed aktualizacją szerokości
-      const initialCenterX = centerX - deltaX / 2;
-      const initialCenterY = centerY - deltaY / 2;
+        // Sprawdź, czy kształt wychodzi poza obszar .page-textarea
+        const leftBoundary = centerX - newDimension / 2;
+        const rightBoundary = centerX + newDimension / 2;
+        const topBoundary = centerY - newDimension / 2;
+        const bottomBoundary = centerY + newDimension / 2;
 
-      // Pobierz kontener .page-textarea
-      const container = this.pageTextarea.nativeElement;
-      const containerWidth = container.clientWidth;
-      const containerHeight = container.clientHeight;
+        if (
+          leftBoundary >= 0 &&
+          rightBoundary <= this.pageTextarea.nativeElement.clientWidth &&
+          topBoundary >= 0 &&
+          bottomBoundary <= this.pageTextarea.nativeElement.clientHeight
+        ) {
+          this.resizingShape.style.width = `${newDimension}px`;
+          this.resizingShape.style.height = `${newDimension}px`;
 
-      // Sprawdź, czy kształt wychodzi poza kontener
-      if (
-        initialCenterX - newWidth / 2 >= 0 &&
-        initialCenterX + newWidth / 2 <= containerWidth &&
-        initialCenterY - newWidth / 2 >= 0 &&
-        initialCenterY + newWidth / 2 <= containerHeight
-      ) {
-        // Ustaw nową szerokość i pozycję dla kwadratu
-        this.resizingShape.style.width = `${newWidth}px`;
-        this.resizingShape.style.height = `${newWidth}px`;
+          // Dostosuj pozycję na podstawie środka
+          this.resizingShape.style.left = `${centerX - newDimension / 2}px`;
+          this.resizingShape.style.top = `${centerY - newDimension / 2}px`;
 
-        // Dostosuj pozycję na podstawie początkowych współrzędnych środka
-        this.resizingShape.style.left = `${initialCenterX - newWidth / 2}px`;
-        this.resizingShape.style.top = `${initialCenterY - newWidth / 2}px`;
+          this.resizeStartX = clientX;
+          this.resizeStartY = clientY;
+        }
+      } else {
+        // Przeskaluj wymiary proporcjonalnie dla innych kształtów
+        const newWidth = Math.max(this.minImageWidth, Math.min(this.maxImageWidth, currentWidth + deltaX));
+        const newHeight = Math.max(this.minImageHeight, Math.min(this.maxImageHeight, currentHeight + deltaY));
 
-        this.resizeStartX = clientX;
-        this.resizeStartY = clientY;
+        // Sprawdź, czy kształt wychodzi poza obszar .page-textarea
+        const leftBoundary = centerX - newWidth / 2;
+        const rightBoundary = centerX + newWidth / 2;
+        const topBoundary = centerY - newHeight / 2;
+        const bottomBoundary = centerY + newHeight / 2;
+
+        if (
+          leftBoundary >= 0 &&
+          rightBoundary <= this.pageTextarea.nativeElement.clientWidth &&
+          topBoundary >= 0 &&
+          bottomBoundary <= this.pageTextarea.nativeElement.clientHeight
+        ) {
+          // Dostosuj pozycję na podstawie środka
+          this.resizingShape.style.width = `${newWidth}px`;
+          this.resizingShape.style.height = `${newHeight}px`;
+          this.resizingShape.style.left = `${centerX - newWidth / 2}px`;
+          this.resizingShape.style.top = `${centerY - newHeight / 2}px`;
+
+          this.resizeStartX = clientX;
+          this.resizeStartY = clientY;
+        }
       }
     }
   }
-
 
   activateRubberTool(): void {
     this.rubberToolActive = !this.rubberToolActive; // Toggle rubber tool state
@@ -412,7 +435,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
   }
 
   setCursorPosition(event: MouseEvent): void {
-    const editor = this.editor.nativeElement;
+    const editor = this.pageTextarea.nativeElement;
     const range = document.caretRangeFromPoint(event.clientX, event.clientY);
 
     if (range) {
@@ -447,17 +470,32 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
           const selection = window.getSelection();
           if (selection && selection.rangeCount > 0) {
             const range = selection.getRangeAt(0);
-            range.deleteContents();
-            range.insertNode(imgElement);
 
-            // Move the cursor after the image
-            const newRange = document.createRange();
-            newRange.setStartAfter(imgElement);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
+            // Użycie type assertion, aby poinformować TypeScript, że startContainer jest Element
+            const anchorNode = range.startContainer as Element;
+            const parentContainer = anchorNode.closest('.page-textarea');
+
+            if (parentContainer) {
+              range.deleteContents();
+              range.insertNode(imgElement);
+
+              // Przesunięcie kursora po obrazie
+              const newRange = document.createRange();
+              newRange.setStartAfter(imgElement);
+              selection.removeAllRanges();
+              selection.addRange(newRange);
+            } else {
+              console.warn("Selection is not within an element with the class 'page-textarea'.");
+            }
           } else {
-            // If no selection is found, append to the end of the editor or handle as needed
-            this.editor.nativeElement.appendChild(imgElement);
+            // Jeśli nie znaleziono zaznaczenia, dodaj na koniec edytora lub obsłuż według potrzeb
+            const parentContainer = this.editor.nativeElement.closest('.page-textarea');
+
+            if (parentContainer) {
+              this.editor.nativeElement.appendChild(imgElement);
+            } else {
+              console.warn("Editor is not within an element with the class 'page-textarea'.");
+            }
           }
 
           this.editor.nativeElement.focus();
@@ -471,6 +509,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
         });
     }
   }
+
 
 
   private readFileAsDataURL(file: File): Promise<string> {

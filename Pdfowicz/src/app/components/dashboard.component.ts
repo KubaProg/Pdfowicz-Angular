@@ -55,9 +55,9 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
     if (this.overflowElements != "") {
       const newPage = (document.querySelectorAll(".page-textarea")[this.focusPageIndex] as HTMLElement);
       newPage.innerHTML = this.overflowElements + newPage.innerHTML;
-      // this.moveCursorToEnd(newPage);
       this.overflowElements = "";
       newPage.dispatchEvent(new InputEvent('input', { bubbles: true }));
+      console.log("A");
     }
   }
 
@@ -86,31 +86,38 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
         if (lastChild.tagName == "DIV") {
           lastChild.innerHTML = lastChild.innerHTML.replace(/<span\s+([^>]*)>|<\/span>/g, '').replace(/<br[^>]*>/g, "<br>");
 
-          let lastCharacter = "";
-          let sliceCharacters = 1;
-          if (lastChild.innerHTML.slice(-4) == "<br>") {
-            sliceCharacters = 4;
+          let lastElement = lastChild.lastChild as HTMLElement;
+          if (lastElement.tagName == "IMG" || lastElement.tagName == "DIV") {
+            this.overflowElements = "<div>" + lastElement.outerHTML + "<div>" + this.overflowElements;
+            lastElement.remove();
           }
-          else if (lastChild.innerHTML.slice(-6) == "&nbsp;") {
-            sliceCharacters = 6;
-          }
-          lastCharacter = lastChild.innerHTML.slice(-sliceCharacters);
+          else {
+            let lastCharacter = "";
+            let sliceCharacters = 1;
+            if (lastChild.innerHTML.slice(-4) == "<br>") {
+              sliceCharacters = 4;
+            }
+            else if (lastChild.innerHTML.slice(-6) == "&nbsp;") {
+              sliceCharacters = 6;
+            }
+            lastCharacter = lastChild.innerHTML.slice(-sliceCharacters);
 
-          this.overflowElements = lastCharacter + this.overflowElements;
-          lastChild.innerHTML = lastChild.innerHTML.slice(0, -sliceCharacters);
+            this.overflowElements = lastCharacter + this.overflowElements;
+            lastChild.innerHTML = lastChild.innerHTML.slice(0, -sliceCharacters);
+          }
 
           if (lastChild.innerHTML == "") {
+            this.overflowElements = "<div>" + this.overflowElements + "<div>";
             lastChild.remove();
             lastChild = e.lastChild as HTMLElement;
           }
         }
         else {
-          this.overflowElements = lastChild.outerHTML + this.overflowElements;
+          this.overflowElements = "<div>" + lastChild.outerHTML + "<div>" + this.overflowElements;
           lastChild.remove();
           lastChild = e.lastChild as HTMLElement;
         }
       }
-
       if (this.overflowElements !== '') {
         this.focusPageIndex = Array.from(document.querySelectorAll('.page-textarea')).indexOf(e) + 1;
         if (!this.pages[this.focusPageIndex]) {

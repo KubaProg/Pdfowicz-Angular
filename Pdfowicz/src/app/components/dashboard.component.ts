@@ -57,7 +57,6 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
       newPage.innerHTML = this.overflowElements + newPage.innerHTML;
       this.overflowElements = "";
       newPage.dispatchEvent(new InputEvent('input', { bubbles: true }));
-      console.log("A");
     }
   }
 
@@ -67,6 +66,24 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
   //Code for multiple pages generation
   checkOverflow(event: Event) {
+    if (event.type === 'paste') {
+      event.preventDefault();
+      let contentToAppend = '';
+      const clipboardData = (event as ClipboardEvent).clipboardData || (window as any).clipboardData;
+      contentToAppend = clipboardData.getData('text/html');
+      const selection = window.getSelection();
+      if (selection) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = contentToAppend.replace(/<html>|<\/html>/g, '').replace(/<body>|<\/body>/g, '').replace(/<span\s+([^>]*)>|<\/span>/g, '').replace(/<p\s+([^>]*)>/g, "").replace(/<\/p>/g, "<br>").replace(/<!--[\s\S]*?-->/g, "");
+        const fragment = document.createDocumentFragment();
+        while (tempDiv.firstChild) {
+          fragment.appendChild(tempDiv.firstChild);
+        }
+        range.insertNode(fragment);
+      }
+    }
     let e = event.target as HTMLElement;
 
     if (!(e.classList.contains("page-textarea"))) {
@@ -88,7 +105,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
 
           let lastElement = lastChild.lastChild as HTMLElement;
           if (lastElement.tagName == "IMG" || lastElement.tagName == "DIV") {
-            this.overflowElements = "<div>" + lastElement.outerHTML + "<div>" + this.overflowElements;
+            this.overflowElements = lastElement.outerHTML + this.overflowElements;
             lastElement.remove();
           }
           else {
@@ -107,13 +124,13 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
           }
 
           if (lastChild.innerHTML == "") {
-            this.overflowElements = "<div>" + this.overflowElements + "<div>";
+            this.overflowElements = "<div>" + this.overflowElements + "</div>";
             lastChild.remove();
             lastChild = e.lastChild as HTMLElement;
           }
         }
         else {
-          this.overflowElements = "<div>" + lastChild.outerHTML + "<div>" + this.overflowElements;
+          this.overflowElements = lastChild.outerHTML + this.overflowElements;
           lastChild.remove();
           lastChild = e.lastChild as HTMLElement;
         }
@@ -494,6 +511,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
             } else {
               console.warn("Selection is not within an element with the class 'page-textarea'.");
             }
+            parentContainer.dispatchEvent(new InputEvent('input', { bubbles: true }));
           } else {
             // Jeśli nie znaleziono zaznaczenia, dodaj na koniec edytora lub obsłuż według potrzeb
             const parentContainer = this.editor.nativeElement.closest('.page-textarea');
@@ -503,6 +521,7 @@ export class DashboardComponent implements AfterViewInit, AfterViewChecked {
             } else {
               console.warn("Editor is not within an element with the class 'page-textarea'.");
             }
+            parentContainer.dispatchEvent(new InputEvent('input', { bubbles: true }));
           }
 
           this.editor.nativeElement.focus();
